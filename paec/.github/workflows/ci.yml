@@ -1,0 +1,50 @@
+name: CI - Backend y Frontend
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  backend-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        working-directory: ./backend
+        run: pip install -r requirements.txt
+
+      - name: Linter (flake8)
+        working-directory: ./backend
+        run: pip install flake8 && flake8 app --max-line-length=100 --extend-ignore=E203
+
+      - name: Pruebas unitarias (pytest)
+        working-directory: ./backend
+        run: pytest -q
+
+  frontend-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Linter (ESLint)
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Build de producción
+        working-directory: ./frontend
+        run: npm run build
