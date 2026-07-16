@@ -8,15 +8,15 @@ Unidad 3 — ING. Desarrollo y Gestión de Software.
 
 ```
 ┌─────────────────────┐        HTTPS / JSON        ┌──────────────────────┐
-│   FrontEnd (React)   │  ────────────────────────► │   BackEnd (FastAPI)  │
-│   Vite + PWA         │  ◄──────────────────────── │   Python 3.12        │
-│   Puerto 5173        │                             │   Puerto 8000        │
-└─────────────────────┘                             └──────────┬───────────┘
-                                                                 │ SQLAlchemy
-                                                                 ▼
+│   FrontEnd (React)  │  ────────────────────────► │   BackEnd (FastAPI)  │
+│   Vite + PWA        │  ◄──────────────────────── │   Python 3.12        │
+│   Puerto 5173       │                            │   Puerto 8000        │
+└─────────────────────┘                            └──────────┬───────────┘
+                                                              │ SQLAlchemy
+                                                              ▼
                                                       ┌──────────────────────┐
-                                                      │   PostgreSQL 16       │
-                                                      │   Puerto 5432         │
+                                                      │   PostgreSQL 16      │
+                                                      │   Puerto 5432        │
                                                       └──────────────────────┘
 
 FrontEnd  → nginx (imagen de producción) sirviendo el build estático + service worker (PWA)
@@ -47,12 +47,6 @@ BackEnd   → Uvicorn + FastAPI, arquitectura en capas:
    - BackEnd (Swagger/OpenAPI): http://localhost:8000/docs
    - PostgreSQL: localhost:5432
 
-## Evidencia de ejecuciones exitosas de GitHub Actions
-
-> Agregar aquí las capturas de pantalla de los workflows en verde (pestaña
-> "Actions" del repositorio) antes de la entrega: una del workflow `CI` en
-> un Pull Request, y otra del workflow `CD` tras fusionar a `main`.
-
 ## Credenciales de prueba
 
 | Rol           | Correo                     | Contraseña      |
@@ -65,7 +59,7 @@ BackEnd   → Uvicorn + FastAPI, arquitectura en capas:
 
 - `main`: código en producción. Prohibido push directo.
 - `develop`: integración de features antes de liberar a producción. Prohibido push directo.
-- `feature/<nombre>`: una rama por historia de usuario/tarea. Se fusiona a `develop` vía Pull Request, con al menos una aprobación y CI en verde.
+- `feature/<nombre>`: una rama por persona. Se fusiona a `develop` vía Pull Request, con al menos una aprobación y CI en verde.
 
 ## Patrones de diseño implementados (BackEnd)
 
