@@ -175,3 +175,130 @@ body {
   color: #60a5fa;
   text-decoration: underline;
 }
+
+/* Intro */
+.intro-page {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 4rem 2rem;
+}
+
+.intro-content {
+  width: 60%;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 900px) {
+  .intro-content {
+    width: 100%;
+  }
+}
+
+.intro-title {
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.intro-lede {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  max-width: 65ch;
+  margin-bottom: 3rem;
+}
+
+.intro-thread {
+  position: relative;
+  padding-left: 2.75rem;
+  margin-bottom: 3rem;
+}
+
+.intro-thread::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--primary-color), #a78bfa);
+}
+
+.intro-node {
+  position: relative;
+  padding-bottom: 2.75rem;
+}
+
+.intro-node:last-child {
+  padding-bottom: 0;
+}
+
+.intro-node::before {
+  content: "";
+  position: absolute;
+  left: -2.75rem;
+  top: 4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--bg-color);
+  border: 2px solid var(--node-color, var(--primary-color));
+}
+
+.intro-node.abp {
+  --node-color: var(--primary-color);
+}
+
+.intro-node.scrum {
+  --node-color: #a78bfa;
+}
+
+.intro-node-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.9rem;
+  color: var(--node-color, var(--primary-color));
+}
+
+.intro-node h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+  color: var(--text-primary);
+}
+
+.intro-node p {
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 62ch;
+}
+
+.intro-node-tag {
+  font-size: 0.85rem;
+  color: var(--node-color, var(--primary-color));
+  margin-top: 0.75rem;
+  display: block;
+}
+
+.intro-cta-wrap {
+  border-top: 1px solid var(--border-color);
+  padding-top: 2.5rem;
+}
+
+.intro-cta {
+  display: inline-block;
+  width: auto;
+  padding: 0.9rem 2.75rem;
+}
+
+@media (max-width: 560px) {
+  .intro-cta {
+    width: 100%;
+  }
+}

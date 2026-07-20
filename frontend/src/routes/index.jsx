@@ -7,6 +7,7 @@ import KanbanBoard from "../pages/KanbanBoard";
 import Dailies from "../pages/Dailies";
 import Dashboard from "../pages/Dashboard";
 import RoleGuard from "../components/RoleGuard";
+import Intro from "../pages/Intro";
 
 // NOTA: teamId=1 está fijo como ejemplo. En la app real, el team_id debe
 // salir del usuario autenticado (a qué equipo pertenece) o de la URL
@@ -14,6 +15,7 @@ import RoleGuard from "../components/RoleGuard";
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Intro />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/equipo" element={<TeamSetup />} />
