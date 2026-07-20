@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "../pages/Login";
+import Register from "../pages/Register";
 import TeamSetup from "../pages/TeamSetup";
 import DesignSprint from "../pages/DesignSprint";
 import KanbanBoard from "../pages/KanbanBoard";
@@ -14,6 +15,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/equipo" element={<TeamSetup />} />
       <Route path="/design-sprint" element={<DesignSprint teamId={1} />} />
       <Route path="/kanban" element={<KanbanBoard teamId={1} />} />
