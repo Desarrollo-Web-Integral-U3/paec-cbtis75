@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user
 from app.models.team import Team, TeamMember
 from app.repositories.base_repository import BaseRepository
 from app.schemas.team import TeamCreate, TeamOut
@@ -16,7 +16,6 @@ def crear_equipo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    repo = BaseRepository(db, Team)
     team = Team(
         nombre_proyecto=payload.nombre_proyecto,
         descripcion_proyecto=payload.descripcion_proyecto,

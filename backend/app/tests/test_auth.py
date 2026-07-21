@@ -1,10 +1,22 @@
 """
-Prueba unitaria mínima de ejemplo. Con esto GitHub Actions ya tiene algo
-que ejecutar en cada PR (requisito de CI/CD). Amplíen esta suite conforme
-avancen: registro, login, RBAC por rol, kanban, alertas, etc.
-"""
-from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
+Tests de autenticación.
 
+Cubre los 4 criterios de aceptación del issue "POST /api/v1/auth/register":
+- Devuelve 201 con el usuario creado
+- Rechaza campos faltantes con 422
+- Password se guarda hasheado (bcrypt)
+- Nunca en texto plano
+"""
+from app.core.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    decode_access_token,
+)
+from app.models.user import User
+
+
+# --- Pruebas unitarias puras (no requieren BD) --------------------------------
 
 def test_password_hash_roundtrip():
     plano = "MiClaveSegura123"
@@ -24,3 +36,134 @@ def test_jwt_roundtrip():
 
 def test_jwt_invalido():
     assert decode_access_token("token.invalido.xyz") is None
+
+
+# --- Tests de endpoint POST /api/v1/auth/register -----------------------------
+
+def _payload_valido(**overrides):
+    """Payload base para registrar un usuario válido. Cada test puede sobrescribir campos."""
+    base = {
+        "nombre_completo": "Juan Pérez",
+        "numero_control": "21380001",
+        "email": "juan@cbtis75.edu.mx",
+        "password": "MiClaveSegura123",
+        "rol": "estudiante",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_register_devuelve_201_y_excluye_password(client):
+    """Criterio 1: 201 + body con datos del usuario, SIN password ni password_hash."""
+    r = client.post("/api/v1/auth/register", json=_payload_valido())
+
+    assert r.status_code == 201
+    body = r.json()
+    assert body["email"] == "juan@cbtis75.edu.mx"
+    assert body["nombre_completo"] == "Juan Pérez"
+    assert body["numero_control"] == "21380001"
+    assert body["rol"] == "estudiante"
+    assert "id" in body
+    # Criterio 4: la contraseña NUNCA se devuelve al cliente.
+    assert "password" not in body
+    assert "password_hash" not in body
+
+
+def test_register_campos_faltantes_devuelve_422(client):
+    """Criterio 2: falta email y password -> 422 con detalle de qué falta."""
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"nombre_completo": "Sin datos", "numero_control": "99999999"},
+    )
+
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    campos_faltantes = {err["loc"][-1] for err in detail}
+    assert "email" in campos_faltantes
+    assert "password" in campos_faltantes
+
+
+def test_register_email_invalido_devuelve_422(client):
+    """Validación de formato: EmailStr de Pydantic rechaza cadenas que no son email."""
+    r = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(email="esto-no-es-un-email"),
+    )
+    assert r.status_code == 422
+
+
+def test_register_password_se_guarda_hasheada_con_bcrypt(client, db_session):
+    """Criterios 3 y 4: la BD guarda un hash bcrypt, NUNCA la contraseña en texto plano."""
+    plano = "OtraClaveSegura456"
+    r = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(
+            email="maria@cbtis75.edu.mx",
+            numero_control="21380002",
+            nombre_completo="María López",
+            password=plano,
+        ),
+    )
+    assert r.status_code == 201
+
+    user = db_session.query(User).filter(User.email == "maria@cbtis75.edu.mx").first()
+    assert user is not None
+    # Nunca en texto plano
+    assert user.password_hash != plano
+    # Formato bcrypt: $2b$<rounds>$<salt+hash>  (12 rounds por defecto de passlib)
+    assert user.password_hash.startswith("$2b$")
+    # El hash sí verifica la contraseña original (roundtrip)
+    assert verify_password(plano, user.password_hash) is True
+
+
+def test_register_email_duplicado_devuelve_400(client):
+    """Criterio 1: segundo registro con mismo email -> 400 con mensaje genérico."""
+    payload = _payload_valido(
+        email="duplicado@cbtis75.edu.mx",
+        numero_control="21380003",
+    )
+    r1 = client.post("/api/v1/auth/register", json=payload)
+    assert r1.status_code == 201
+
+    r2 = client.post("/api/v1/auth/register", json=payload)
+    assert r2.status_code == 400
+
+
+def test_register_numero_control_duplicado_devuelve_400(client):
+    """La validación cubre AMBOS campos: mismo numero_control con email distinto también -> 400."""
+    r1 = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(
+            email="primero@cbtis75.edu.mx",
+            numero_control="21380004",
+        ),
+    )
+    assert r1.status_code == 201
+
+    r2 = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(
+            email="otro@cbtis75.edu.mx",  # email distinto
+            numero_control="21380004",    # mismo numero_control
+        ),
+    )
+    assert r2.status_code == 400
+
+
+def test_register_duplicado_no_revela_que_campo_conflictuo(client):
+    """Criterio 2: el mensaje NO debe mencionar 'email' ni 'numero_control'
+    para no filtrar información sobre qué cuentas existen (enumeración de usuarios).
+    """
+    payload = _payload_valido(
+        email="secreto@cbtis75.edu.mx",
+        numero_control="21380005",
+    )
+    client.post("/api/v1/auth/register", json=payload)
+    r = client.post("/api/v1/auth/register", json=payload)
+
+    assert r.status_code == 400
+    mensaje = r.json()["detail"].lower()
+    assert "email" not in mensaje
+    assert "numero_control" not in mensaje
+    assert "correo" not in mensaje
+    assert "control" not in mensaje
