@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.models.design_sprint import DesignSprintDay, DiaDesignSprint
 from app.models.team import Team, TeamMember
 from app.repositories.base_repository import BaseRepository
 from app.schemas.team import TeamCreate, TeamOut
@@ -26,6 +27,11 @@ def crear_equipo(
 
     for m in payload.members:
         db.add(TeamMember(team_id=team.id, user_id=m.user_id, rol_scrum=m.rol_scrum))
+
+    # Issue #8: auto-crear los 5 días del Design Sprint en la misma transacción.
+    # Si el commit falla, los días también se revierten (atomicidad).
+    for dia in DiaDesignSprint:
+        db.add(DesignSprintDay(team_id=team.id, dia=dia))
 
     db.commit()
     db.refresh(team)
