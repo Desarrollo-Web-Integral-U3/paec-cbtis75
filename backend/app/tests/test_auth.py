@@ -117,7 +117,7 @@ def test_register_password_se_guarda_hasheada_con_bcrypt(client, db_session):
 
 
 def test_register_email_duplicado_devuelve_400(client):
-    """Regla de negocio adicional: no se puede registrar dos veces el mismo email."""
+    """Criterio 1: segundo registro con mismo email -> 400 con mensaje genérico."""
     payload = _payload_valido(
         email="duplicado@cbtis75.edu.mx",
         numero_control="21380003",
@@ -127,3 +127,43 @@ def test_register_email_duplicado_devuelve_400(client):
 
     r2 = client.post("/api/v1/auth/register", json=payload)
     assert r2.status_code == 400
+
+
+def test_register_numero_control_duplicado_devuelve_400(client):
+    """La validación cubre AMBOS campos: mismo numero_control con email distinto también -> 400."""
+    r1 = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(
+            email="primero@cbtis75.edu.mx",
+            numero_control="21380004",
+        ),
+    )
+    assert r1.status_code == 201
+
+    r2 = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(
+            email="otro@cbtis75.edu.mx",  # email distinto
+            numero_control="21380004",    # mismo numero_control
+        ),
+    )
+    assert r2.status_code == 400
+
+
+def test_register_duplicado_no_revela_que_campo_conflictuo(client):
+    """Criterio 2: el mensaje NO debe mencionar 'email' ni 'numero_control'
+    para no filtrar información sobre qué cuentas existen (enumeración de usuarios).
+    """
+    payload = _payload_valido(
+        email="secreto@cbtis75.edu.mx",
+        numero_control="21380005",
+    )
+    client.post("/api/v1/auth/register", json=payload)
+    r = client.post("/api/v1/auth/register", json=payload)
+
+    assert r.status_code == 400
+    mensaje = r.json()["detail"].lower()
+    assert "email" not in mensaje
+    assert "numero_control" not in mensaje
+    assert "correo" not in mensaje
+    assert "control" not in mensaje
