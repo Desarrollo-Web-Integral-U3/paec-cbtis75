@@ -167,3 +167,132 @@ def test_register_duplicado_no_revela_que_campo_conflictuo(client):
     assert "numero_control" not in mensaje
     assert "correo" not in mensaje
     assert "control" not in mensaje
+
+
+# --- Tests Issue #6: restricción de rol en registro público -----------------
+
+def test_registro_publico_con_rol_docente_queda_como_estudiante(client, db_session):
+    """
+    Criterio de aceptación #6-1:
+    Enviar rol=docente al endpoint público /register debe resultar en un
+    usuario con rol=estudiante. El campo 'rol' no existe en UserCreatePublic,
+    por lo que Pydantic lo ignora y el handler fuerza ESTUDIANTE.
+    """
+    payload = {
+        "nombre_completo": "Atacante Rol",
+        "numero_control": "21390001",
+        "email": "atacante_docente@cbtis75.edu.mx",
+        "password": "ClaveSegura789",
+        "rol": "docente",  # intento de escalada de privilegios
+    }
+    r = client.post("/api/v1/auth/register", json=payload)
+
+    assert r.status_code == 201
+    body = r.json()
+    # El rol devuelto debe ser estudiante, no docente
+    assert body["rol"] == "estudiante", (
+        f"Se esperaba 'estudiante' pero se obtuvo '{body['rol']}'. "
+        "El endpoint público no debe aceptar rol=docente."
+    )
+
+    # Verificar directamente en BD que tampoco se guardó como docente
+    user = db_session.query(User).filter(User.email == payload["email"]).first()
+    assert user is not None
+    assert user.rol.value == "estudiante"
+
+
+def test_registro_publico_con_rol_scrum_master_queda_como_estudiante(client, db_session):
+    """
+    Criterio de aceptación #6-1 (variante):
+    Enviar rol=scrum_master al endpoint público también debe resultar en estudiante.
+    """
+    payload = {
+        "nombre_completo": "Atacante Scrum",
+        "numero_control": "21390002",
+        "email": "atacante_scrum@cbtis75.edu.mx",
+        "password": "ClaveSegura789",
+        "rol": "scrum_master",  # otro intento de escalada
+    }
+    r = client.post("/api/v1/auth/register", json=payload)
+
+    assert r.status_code == 201
+    assert r.json()["rol"] == "estudiante"
+
+    user = db_session.query(User).filter(User.email == payload["email"]).first()
+    assert user.rol.value == "estudiante"
+
+
+def test_registro_publico_omitir_rol_queda_como_estudiante(client):
+    """
+    Caso base: si no se envía el campo rol, el resultado sigue siendo estudiante.
+    """
+    payload = {
+        "nombre_completo": "Usuario Sin Rol",
+        "numero_control": "21390003",
+        "email": "sinrol@cbtis75.edu.mx",
+        "password": "ClaveSegura789",
+        # sin campo 'rol'
+    }
+    r = client.post("/api/v1/auth/register", json=payload)
+
+    assert r.status_code == 201
+    assert r.json()["rol"] == "estudiante"
+
+
+def test_register_docente_sin_token_retorna_401(client):
+    """
+    Criterio de aceptación #6-2:
+    El endpoint protegido /register/docente debe rechazar peticiones
+    sin token de autenticación con 401.
+    """
+    payload = {
+        "nombre_completo": "Nuevo Docente",
+        "numero_control": "21390004",
+        "email": "nuevo_docente@cbtis75.edu.mx",
+        "password": "ClaveDocente123",
+        "rol": "docente",
+    }
+    r = client.post("/api/v1/auth/register/docente", json=payload)
+
+    assert r.status_code == 401
+
+
+def test_register_docente_con_token_de_estudiante_retorna_403(client):
+    """
+    Criterio de aceptación #6-2:
+    Un estudiante autenticado NO puede usar /register/docente. Debe recibir 403.
+    """
+    # 1. Crear y autenticar un estudiante
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "nombre_completo": "Estudiante Normal",
+            "numero_control": "21390005",
+            "email": "estudiante_normal@cbtis75.edu.mx",
+            "password": "ClaveEstudiante123",
+        },
+    )
+    login_r = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "estudiante_normal@cbtis75.edu.mx",
+            "password": "ClaveEstudiante123",
+        },
+    )
+    assert login_r.status_code == 200
+    token = login_r.json()["access_token"]
+
+    # 2. Intentar crear un docente usando el token del estudiante
+    r = client.post(
+        "/api/v1/auth/register/docente",
+        json={
+            "nombre_completo": "Docente Falso",
+            "numero_control": "21390006",
+            "email": "docente_falso@cbtis75.edu.mx",
+            "password": "ClaveDocente456",
+            "rol": "docente",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 403
