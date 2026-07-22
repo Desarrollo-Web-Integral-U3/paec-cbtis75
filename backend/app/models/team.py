@@ -20,9 +20,7 @@ class Team(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
-    design_sprint_days = relationship(
-        "DesignSprintDay", back_populates="team", cascade="all, delete-orphan"
-    )
+    design_sprint_days = relationship("DesignSprintDay", back_populates="team", cascade="all, delete-orphan")
     sprints = relationship("Sprint", back_populates="team", cascade="all, delete-orphan")
     dailies = relationship("Daily", back_populates="team", cascade="all, delete-orphan")
     alerts = relationship("Alert", back_populates="team", cascade="all, delete-orphan")
