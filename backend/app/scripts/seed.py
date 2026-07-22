@@ -56,6 +56,15 @@ def run() -> None:
     db = SessionLocal()
     try:
         hashed = hash_password(PASSWORD_DEMO)
+        ahora = datetime.utcnow()
+
+        # Defaults comunes de consentimiento del aviso de privacidad
+        # (todos los usuarios del seed se consideran ya "aceptados" para
+        # que la BD quede consistente con la nueva regla de NOT NULL).
+        consent_defaults = {
+            "consentimiento_privacidad": True,
+            "fecha_consentimiento": ahora,
+        }
 
         # --- Usuarios (1 por rol como mínimo; ponemos 4 para hacer la demo rica) --
         docente = _get_or_create_user(db, "docente@cbtis75.edu.mx", {
@@ -63,24 +72,28 @@ def run() -> None:
             "numero_control": "DOC00001",
             "password_hash": hashed,
             "rol": RolUsuario.DOCENTE,
+            **consent_defaults,
         })
         scrum_master = _get_or_create_user(db, "scrummaster@cbtis75.edu.mx", {
             "nombre_completo": "Ana Torres",
             "numero_control": "21380100",
             "password_hash": hashed,
             "rol": RolUsuario.SCRUM_MASTER,
+            **consent_defaults,
         })
         estudiante_1 = _get_or_create_user(db, "estudiante1@cbtis75.edu.mx", {
             "nombre_completo": "Carlos Rivera",
             "numero_control": "21380101",
             "password_hash": hashed,
             "rol": RolUsuario.ESTUDIANTE,
+            **consent_defaults,
         })
         estudiante_2 = _get_or_create_user(db, "estudiante2@cbtis75.edu.mx", {
             "nombre_completo": "Mariana Ochoa",
             "numero_control": "21380102",
             "password_hash": hashed,
             "rol": RolUsuario.ESTUDIANTE,
+            **consent_defaults,
         })
 
         # --- Equipo (el docente NO es miembro, es supervisor) --------------------
