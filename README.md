@@ -47,13 +47,24 @@ BackEnd   → Uvicorn + FastAPI, arquitectura en capas:
    - BackEnd (Swagger/OpenAPI): http://localhost:8000/docs
    - PostgreSQL: localhost:5432
 
-## Credenciales de prueba
+6. **Poblar la BD con datos de demostración (seed):**
+   ```bash
+   docker compose exec backend python -m app.scripts.seed
+   ```
+   Es idempotente — se puede correr varias veces sin duplicar registros.
+   Deja el sistema listo para una demo completa: 4 usuarios (uno por cada rol),
+   un equipo, un sprint activo, 7 tareas, un día de Design Sprint y un daily.
 
-| Rol           | Correo                     | Contraseña      |
-|---------------|-----------------------------|-----------------|
-| Docente       | docente@cbtis75.edu.mx      | *(crear vía /api/v1/auth/register y anotar aquí)* |
-| Scrum Master  | scrummaster@cbtis75.edu.mx  | *(crear vía /api/v1/auth/register y anotar aquí)* |
-| Estudiante    | estudiante@cbtis75.edu.mx   | *(crear vía /api/v1/auth/register y anotar aquí)* |
+## Credenciales de prueba (creadas por el seed)
+
+Contraseña común para todos los usuarios de demo: **`Demo1234!`**
+
+| Rol           | Correo                       |
+|---------------|------------------------------|
+| Docente       | docente@cbtis75.edu.mx       |
+| Scrum Master  | scrummaster@cbtis75.edu.mx   |
+| Estudiante 1  | estudiante1@cbtis75.edu.mx   |
+| Estudiante 2  | estudiante2@cbtis75.edu.mx   |
 
 ## Flujo de trabajo Git (GitFlow)
 
