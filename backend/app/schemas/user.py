@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 from app.models.user import RolUsuario
@@ -15,6 +17,12 @@ class UserCreate(UserBase):
     # "Validación de Datos en Cliente/BackEnd" y "principio de minimización":
     # el front solo debe enviar estos campos, ni uno más.
     password: str
+    # Consentimiento explícito del aviso de privacidad. Sin default -> el
+    # cliente OBLIGATORIAMENTE tiene que mandarlo. Si viene False, el router
+    # responde 400. NO exponemos fecha_consentimiento aquí: el servidor la
+    # fija con datetime.utcnow() al registrar (nunca confiar en timestamps
+    # que vengan del cliente).
+    consentimiento_privacidad: bool
 
 
 class UserCreatePublic(BaseModel):
@@ -30,6 +38,8 @@ class UserCreatePublic(BaseModel):
     numero_control: str
     email: EmailStr
     password: str
+    # Consentimiento explícito del aviso de privacidad — mismo criterio que en UserCreate.
+    consentimiento_privacidad: bool
 
     @field_validator("nombre_completo")
     @classmethod
@@ -41,6 +51,10 @@ class UserCreatePublic(BaseModel):
 
 class UserOut(UserBase):
     id: int
+    # Incluidos para transparencia y auditoría: el usuario recibe la
+    # confirmación de que su consentimiento quedó registrado y cuándo.
+    consentimiento_privacidad: bool
+    fecha_consentimiento: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
     # OJO: password_hash NUNCA se incluye aquí -> evita
     # "Fuga de Datos Masiva / Excessive Data Exposure" (OWASP, Actividad 2)

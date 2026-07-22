@@ -48,6 +48,9 @@ def _payload_valido(**overrides):
         "email": "juan@cbtis75.edu.mx",
         "password": "MiClaveSegura123",
         "rol": "estudiante",
+        # Requerido desde el issue del aviso de privacidad: sin este flag
+        # en True el endpoint responde 400.
+        "consentimiento_privacidad": True,
     }
     base.update(overrides)
     return base
@@ -184,6 +187,7 @@ def test_registro_publico_con_rol_docente_queda_como_estudiante(client, db_sessi
         "email": "atacante_docente@cbtis75.edu.mx",
         "password": "ClaveSegura789",
         "rol": "docente",  # intento de escalada de privilegios
+        "consentimiento_privacidad": True,
     }
     r = client.post("/api/v1/auth/register", json=payload)
 
@@ -212,6 +216,7 @@ def test_registro_publico_con_rol_scrum_master_queda_como_estudiante(client, db_
         "email": "atacante_scrum@cbtis75.edu.mx",
         "password": "ClaveSegura789",
         "rol": "scrum_master",  # otro intento de escalada
+        "consentimiento_privacidad": True,
     }
     r = client.post("/api/v1/auth/register", json=payload)
 
@@ -232,6 +237,7 @@ def test_registro_publico_omitir_rol_queda_como_estudiante(client):
         "email": "sinrol@cbtis75.edu.mx",
         "password": "ClaveSegura789",
         # sin campo 'rol'
+        "consentimiento_privacidad": True,
     }
     r = client.post("/api/v1/auth/register", json=payload)
 
@@ -251,6 +257,7 @@ def test_register_docente_sin_token_retorna_401(client):
         "email": "nuevo_docente@cbtis75.edu.mx",
         "password": "ClaveDocente123",
         "rol": "docente",
+        "consentimiento_privacidad": True,
     }
     r = client.post("/api/v1/auth/register/docente", json=payload)
 
@@ -270,6 +277,7 @@ def test_register_docente_con_token_de_estudiante_retorna_403(client):
             "numero_control": "21390005",
             "email": "estudiante_normal@cbtis75.edu.mx",
             "password": "ClaveEstudiante123",
+            "consentimiento_privacidad": True,
         },
     )
     login_r = client.post(
@@ -291,8 +299,48 @@ def test_register_docente_con_token_de_estudiante_retorna_403(client):
             "email": "docente_falso@cbtis75.edu.mx",
             "password": "ClaveDocente456",
             "rol": "docente",
+            "consentimiento_privacidad": True,
         },
         headers={"Authorization": f"Bearer {token}"},
     )
 
     assert r.status_code == 403
+
+
+# --- Tests del issue de consentimiento del aviso de privacidad ---------------
+
+def test_register_sin_consentimiento_devuelve_400(client):
+    """
+    Criterio: el endpoint debe rechazar con 400 si el usuario NO marcó el
+    checkbox del aviso de privacidad (consentimiento_privacidad=false).
+    """
+    r = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(consentimiento_privacidad=False),
+    )
+    assert r.status_code == 400
+    assert "privacidad" in r.json()["detail"].lower()
+
+
+def test_register_guarda_consentimiento_y_fecha_en_bd(client, db_session):
+    """
+    Criterio: la tabla users guarda consentimiento_privacidad (True) y la
+    fecha_consentimiento (server-side, no la que mande el cliente).
+    """
+    r = client.post(
+        "/api/v1/auth/register",
+        json=_payload_valido(
+            email="consent@cbtis75.edu.mx",
+            numero_control="21380009",
+        ),
+    )
+    assert r.status_code == 201
+
+    user = db_session.query(User).filter(User.email == "consent@cbtis75.edu.mx").first()
+    assert user is not None
+    assert user.consentimiento_privacidad is True
+    assert user.fecha_consentimiento is not None
+    # Y también viene en la respuesta (transparencia para el cliente)
+    body = r.json()
+    assert body["consentimiento_privacidad"] is True
+    assert body["fecha_consentimiento"] is not None

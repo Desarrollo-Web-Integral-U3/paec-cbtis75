@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/client";
+import PrivacyNotice from "../components/PrivacyNotice";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -9,6 +10,9 @@ export default function Register() {
     numero_control: "",
     password: "",
     confirm_password: "",
+    // Consentimiento explícito del aviso de privacidad — inicia FALSE:
+    // el usuario tiene que marcar el checkbox activamente (nunca pre-marcado).
+    consentimiento_privacidad: false,
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [backendError, setBackendError] = useState("");
@@ -73,6 +77,11 @@ export default function Register() {
       errors.confirm_password = "Las contraseñas no coinciden.";
     }
 
+    if (!formData.consentimiento_privacidad) {
+      errors.consentimiento_privacidad =
+        "Debes aceptar el aviso de privacidad para continuar.";
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -85,7 +94,13 @@ export default function Register() {
       return;
     }
 
-    const { nombre_completo, email, numero_control, password } = formData;
+    const {
+      nombre_completo,
+      email,
+      numero_control,
+      password,
+      consentimiento_privacidad,
+    } = formData;
 
     try {
       await api.post("/api/v1/auth/register", {
@@ -93,6 +108,7 @@ export default function Register() {
         email,
         numero_control,
         password,
+        consentimiento_privacidad,
       });
       navigate("/login");
     } catch (err) {
@@ -187,6 +203,22 @@ export default function Register() {
               onChange={handleChange}
             />
             {fieldErrors.confirm_password && <span style={{ color: 'var(--error-color)', fontSize: '0.85rem' }}>{fieldErrors.confirm_password}</span>}
+          </div>
+
+          <div className="form-group">
+            <PrivacyNotice
+              onAccept={(aceptado) => {
+                setFormData((prev) => ({ ...prev, consentimiento_privacidad: aceptado }));
+                if (aceptado && fieldErrors.consentimiento_privacidad) {
+                  setFieldErrors((prev) => ({ ...prev, consentimiento_privacidad: "" }));
+                }
+              }}
+            />
+            {fieldErrors.consentimiento_privacidad && (
+              <span style={{ color: 'var(--error-color)', fontSize: '0.85rem' }}>
+                {fieldErrors.consentimiento_privacidad}
+              </span>
+            )}
           </div>
 
           <button type="submit" className="btn-primary">Registrarse</button>
