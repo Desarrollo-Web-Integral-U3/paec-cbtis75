@@ -302,3 +302,733 @@ body {
     width: 100%;
   }
 }
+
+/* ============================
+   Design Sprint — tablero
+   ============================ */
+
+.ds-page {
+  padding: 2rem clamp(1rem, 4vw, 2rem);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.ds-header {
+  margin-bottom: 2rem;
+}
+
+.ds-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ds-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0.35rem 0 0.5rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(120deg, #3e6ff2, #e8542e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ds-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.55;
+}
+
+/* Selector de rol temporal, solo para previsualizar RBAC sin auth real */
+.ds-role-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--border-color);
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 1.5rem;
+}
+
+.ds-role-toggle select {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  font-weight: 600;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.ds-role-toggle select:focus {
+  outline: none;
+}
+
+/* Riel de progreso */
+.ds-rail-wrap {
+  position: relative;
+  margin: 2.5rem 0 0.75rem;
+  padding: 0 0.5rem;
+}
+
+.ds-rail-track {
+  position: absolute;
+  top: 17px;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.ds-rail-fill {
+  position: absolute;
+  top: 17px;
+  left: 0.5rem;
+  height: 2px;
+  background: linear-gradient(90deg, #3e6ff2, #e8542e);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.ds-rail-nodes {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ds-rail-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 0;
+}
+
+.ds-rail-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--surface-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.45;
+  transition: background 0.3s ease, border-color 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Los círculos se van "desbloqueando" (encendiendo) a medida que se completan días */
+.ds-rail-dot.is-unlocked {
+  opacity: 1;
+}
+
+.ds-rail-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  opacity: 0.45;
+  transition: opacity 0.3s ease;
+}
+
+.ds-rail-label.is-unlocked {
+  opacity: 1;
+}
+
+.ds-progress-text {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 2rem;
+}
+
+/* Tablero tipo bento: la card del día activo ocupa el doble de espacio */
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(200px, auto);
+  grid-auto-flow: dense;
+  gap: 1.25rem;
+}
+
+.ds-card {
+  position: relative;
+  background: var(--surface-color);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.15rem 1.15rem 1.15rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, padding 0.2s ease;
+  min-width: 0;
+}
+
+.ds-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 34px -10px rgba(0, 0, 0, 0.4);
+}
+
+/* Al avanzar el día activo, esta clase "salta" de una card a otra:
+   la que la tiene ocupa el doble de espacio (2x2) y las demás se
+   reacomodan solas gracias a grid-auto-flow: dense. */
+.ds-card--featured {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 1.85rem 1.85rem 1.85rem 2rem;
+}
+
+.ds-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+@media (max-width: 900px) {
+  .ds-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ds-card--featured {
+    grid-row: span 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .ds-grid {
+    grid-template-columns: 1fr;
+  }
+  .ds-card--featured {
+    grid-column: span 1;
+  }
+}
+
+/* Alerta de "día completado" dentro de la card */
+.ds-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success-color);
+  animation: ds-pop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ds-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Extiende .form-group (ya definido arriba para inputs) a los textareas
+   del tablero, para que se vean consistentes con el resto de la app. */
+.form-group textarea {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.form-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Grid and layout */
+.ds-page {
+  padding: 2rem clamp(1rem, 4vw, 2rem);
+  color: var(--text-primary);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(200px, auto);
+  grid-auto-flow: dense;
+  gap: 1.25rem;
+}
+
+/* Header */
+.ds-header {
+  margin-bottom: 2rem;
+}
+
+.ds-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ds-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0.35rem 0 0.5rem;
+  color: var(--primary-color);
+  letter-spacing: -0.02em;
+}
+
+.ds-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Progress Rail */
+.ds-rail-wrap {
+  position: relative;
+  margin: 2.5rem 0 0.75rem;
+  padding: 0 0.5rem;
+}
+
+.ds-rail-track {
+  position: absolute;
+  top: 17px;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.ds-rail-fill {
+  position: absolute;
+  top: 17px;
+  left: 0.5rem;
+  height: 2px;
+  background: var(--primary-color);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.ds-rail-nodes {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ds-rail-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 0;
+}
+
+.ds-rail-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--surface-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease, border-color 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ds-rail-dot--completed {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.ds-rail-dot--planned {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--border-color);
+}
+
+.ds-rail-dot--locked {
+  opacity: 0.5;
+}
+
+.ds-rail-dot--active {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.ds-rail-dot-number {
+  font-size: 0.65rem;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-secondary);
+}
+.ds-rail-dot--planned .ds-rail-dot-number {
+  color: var(--primary-color);
+}
+
+.ds-rail-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: opacity 0.3s ease;
+}
+.ds-rail-label--locked {
+  opacity: 0.5;
+}
+
+.ds-progress-text {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-family: 'IBM Plex Mono', monospace;
+  margin: 0 0 2rem;
+}
+
+/* Cards */
+.ds-card {
+  position: relative;
+  background: var(--surface-color);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, padding 0.2s ease;
+  min-width: 0;
+  padding: 1.15rem 1.15rem 1.15rem 1.35rem;
+}
+
+.ds-card:hover:not(.ds-card--locked) {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 34px -10px rgba(0, 0, 0, 0.4);
+}
+
+.ds-card--featured {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 1.85rem 1.85rem 1.85rem 2rem;
+}
+.ds-card--featured:hover {
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.4);
+}
+
+.ds-card--locked {
+  box-shadow: none;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+@media (max-width: 900px) {
+  .ds-grid { grid-template-columns: repeat(2, 1fr); }
+  .ds-card--featured { grid-row: span 1; }
+}
+@media (max-width: 560px) {
+  .ds-grid { grid-template-columns: 1fr; }
+  .ds-card--featured { grid-column: span 1; }
+}
+
+.ds-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.ds-card-header-left {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.ds-day-index {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  padding-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+}
+.ds-card--featured .ds-day-index { font-size: 1rem; }
+.ds-card--locked .ds-day-index { color: var(--text-secondary); }
+
+.ds-day-label {
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+.ds-card--featured .ds-day-label { font-size: 1.5rem; }
+
+.ds-day-name {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.ds-badge-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.ds-featured-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-color);
+}
+
+.ds-status-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.ds-status-pill--completed {
+  color: var(--success-color);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.ds-status-pill--pending {
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.15);
+  border: none;
+}
+
+.ds-day-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 70ch;
+}
+
+/* Card Bodies */
+.ds-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.ds-locked-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: 1rem 0.5rem;
+}
+
+.ds-lock-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.ds-locked-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  max-width: 220px;
+  margin: 0;
+}
+
+.ds-field-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ds-textarea {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 70px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.ds-textarea:focus {
+  border-color: var(--primary-color);
+}
+
+.ds-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1.5px dashed var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  margin-top: auto;
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  color: var(--primary-color);
+}
+.ds-card--featured .ds-dropzone {
+  padding: 0.8rem 1rem;
+}
+.ds-dropzone:hover {
+  border-color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.ds-dropzone-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ds-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.ds-save-button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-top: auto;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+.ds-save-button:hover:not(.ds-save-button--disabled) {
+  opacity: 0.9;
+}
+.ds-save-button--disabled {
+  background: var(--border-color);
+  cursor: not-allowed;
+  color: var(--text-secondary);
+}
+
+.ds-plan-box {
+  border-left: 3px solid var(--primary-color);
+  padding-left: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ds-plan-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.ds-plan-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ds-done-text {
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+.ds-done-text--success {
+  color: var(--success-color);
+}
+.ds-done-text--pending {
+  color: var(--text-secondary);
+}
+
+/* Feedback Panel */
+.ds-feedback-panel {
+  padding: 0.8rem 0.9rem;
+  background-color: rgba(59, 130, 246, 0.08);
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  margin-top: auto;
+}
+
+.ds-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.ds-feedback-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.ds-feedback-divider {
+  border: none;
+  border-top: 1px solid rgba(59, 130, 246, 0.18);
+  margin: 0.5rem 0;
+}
+
+.ds-feedback-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ds-feedback-text--muted {
+  font-style: italic;
+  opacity: 0.8;
+}

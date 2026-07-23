@@ -42,7 +42,7 @@ export default function Intro() {
         </div>
 
         <div className="intro-cta-wrap">
-          <button onClick={() => navigate('/login')} className="btn-primary intro-cta">
+          <button onClick={() => navigate('/register')} className="btn-primary intro-cta">
             Continuar al registro
           </button>
         </div>
