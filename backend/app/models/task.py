@@ -45,8 +45,8 @@ class Task(Base):
 
     estado_kanban = Column(Enum(EstadoKanban), nullable=False, default=EstadoKanban.POR_HACER)
     evidencia_url = Column(String(500), nullable=True)
-    comentario = Column(Text, nullable=True)
-    # Para mover a "Terminado" es obligatorio subir evidencia Y que el
+    evidencia_public_id = Column(String(200), nullable=True)   # ID interno de Cloudinary
+    comentario = Column(Text, nullable=True)    # Para mover a "Terminado" es obligatorio subir evidencia Y que el
     # Scrum Master la apruebe (regla de negocio validada en el servicio, no solo en el front)
     aprobado_por_scrum_master = Column(Boolean, default=False)
 

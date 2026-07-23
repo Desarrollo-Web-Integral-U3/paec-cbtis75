@@ -23,6 +23,7 @@ class DesignSprintDayOut(BaseModel):
     fecha_planeada: datetime | None
     plan_descripcion: str | None
     evidencia_url: str | None
+    evidencia_public_id: str | None
     comentario_docente: str | None
     completado: int
 
