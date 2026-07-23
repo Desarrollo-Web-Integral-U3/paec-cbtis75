@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -98,3 +99,30 @@ def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": str(user.id), "rol": user.rol.value})
     return Token(access_token=token)
+
+@router.post("/token", response_model=Token, include_in_schema=False)
+def token(
+    request: Request,
+    form: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint compatible con el flujo OAuth2 Password de Swagger UI.
+    Acepta credenciales como form-encoded (username = email, password = ...).
+    Uso exclusivo del boton Authorize en /docs — el frontend sigue usando
+    POST /api/v1/auth/login con JSON. Ambos delegan en el mismo verificador
+    de credenciales.
+    """
+    repo = UserRepository(db)
+    user = repo.get_by_email(form.username)  # username del form == email
+    credenciales_invalidas = HTTPException(
+        status_code=401,
+        detail="Credenciales inválidas.",
+    )
+    if not user or not verify_password(form.password, user.password_hash):
+        raise credenciales_invalidas
+
+    access_token = create_access_token(
+        {"sub": str(user.id), "rol": user.rol.value},
+    )
+    return Token(access_token=access_token)

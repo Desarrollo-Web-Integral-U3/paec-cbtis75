@@ -344,3 +344,46 @@ def test_register_guarda_consentimiento_y_fecha_en_bd(client, db_session):
     body = r.json()
     assert body["consentimiento_privacidad"] is True
     assert body["fecha_consentimiento"] is not None
+
+def test_token_endpoint_acepta_form_encoded(client):
+    """
+    El endpoint /token (usado por Swagger Authorize) acepta credenciales
+    form-encoded con username=email y regresa un access_token valido.
+    """
+    # Registro previo por el endpoint publico normal
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "nombre_completo": "Usuario Swagger",
+            "numero_control": "SW0001",
+            "email": "swagger@cbtis75.edu.mx",
+            "password": "Demo1234!",
+            "consentimiento_privacidad": True,
+        },
+    )
+
+    # Login por el nuevo endpoint form-encoded
+    response = client.post(
+        "/api/v1/auth/token",
+        data={
+            "username": "swagger@cbtis75.edu.mx",
+            "password": "Demo1234!",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert body["access_token"]
+
+
+def test_token_endpoint_rechaza_credenciales_invalidas(client):
+    """Con password mala el endpoint /token responde 401 sin filtrar detalle."""
+    response = client.post(
+        "/api/v1/auth/token",
+        data={
+            "username": "inexistente@cbtis75.edu.mx",
+            "password": "Wrong123!",
+        },
+    )
+    assert response.status_code == 401
