@@ -9,9 +9,6 @@ import Dashboard from "../pages/Dashboard";
 import RoleGuard from "../components/RoleGuard";
 import Intro from "../pages/Intro";
 
-// NOTA: teamId=1 está fijo como ejemplo. En la app real, el team_id debe
-// salir del usuario autenticado (a qué equipo pertenece) o de la URL
-// (/equipo/:teamId/...).
 export default function AppRoutes() {
   return (
     <Routes>
@@ -19,7 +16,7 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/equipo" element={<TeamSetup />} />
-      <Route path="/design-sprint" element={<DesignSprint teamId={1} />} />
+      <Route path="/design-sprint" element={<DesignSprint />} />
       <Route path="/kanban" element={<KanbanBoard teamId={1} />} />
       <Route path="/dailies" element={<Dailies teamId={1} />} />
       <Route
