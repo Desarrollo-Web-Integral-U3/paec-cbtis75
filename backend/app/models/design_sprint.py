@@ -27,7 +27,8 @@ class DesignSprintDay(Base):
     dia = Column(Enum(DiaDesignSprint), nullable=False)
     fecha_planeada = Column(DateTime, nullable=True)
     plan_descripcion = Column(Text, nullable=True)       # qué van a hacer ese día
-    evidencia_url = Column(String(500), nullable=True)   # archivo subido (S3/local storage)
+    evidencia_url = Column(String(500), nullable=True)         # URL publica devuelta por Cloudinary
+    evidencia_public_id = Column(String(200), nullable=True)   # ID interno para borrar/reemplazar
     comentario_docente = Column(Text, nullable=True)
     completado = Column(Integer, default=0)  # 0/1 como boolean simple
 

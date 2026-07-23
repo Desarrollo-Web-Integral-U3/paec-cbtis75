@@ -44,6 +44,7 @@ def _registrar_usuario(client, email: str, numero_control: str, nombre: str = "U
             "numero_control": numero_control,
             "email": email,
             "password": "ClaveSegura123",
+            "consentimiento_privacidad": True,
         },
     )
     assert r.status_code == 201, r.text
