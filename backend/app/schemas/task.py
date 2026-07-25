@@ -37,6 +37,24 @@ class TaskCreate(BaseModel):
     story_points: int = Field(1, gt=0)
 
 
+class TaskUpdate(BaseModel):
+    """
+    Schema para PUT /historia/{id}.
+    Todos los campos son opcionales: solo se actualizan los que vienen
+    en la petición (actualización parcial), sin sobrescribir el resto.
+    """
+    asignado_a: int | None = None
+    nombre_actividad: str | None = Field(None, max_length=150)
+    descripcion: str | None = None
+    criterios_aceptacion: str | None = None
+    fecha_inicio: datetime | None = None
+    fecha_fin: datetime | None = None
+    tiempo_estimado_horas: int | None = Field(None, gt=0)
+    prioridad: Prioridad | None = None
+    story_points: int | None = Field(None, gt=0)
+
+
+
 class TaskMoveKanban(BaseModel):
     """
     Para mover una tarea en el Kanban (p.ej. a 'terminado') es OBLIGATORIO

@@ -1,17 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings
 from app.core.database import Base, engine
-from app.routers import auth, teams, design_sprint, backlog, kanban, dailies, dashboard
+from app.core.rate_limit import limiter
+from app.routers import (
+    auth,
+    teams,
+    design_sprint,
+    backlog,
+    kanban,
+    dailies,
+    dashboard,
+    uploads,
+)
 
 settings = get_settings()
-
-# --- Rate limiting global (cubre "Falta de Rate Limiting" del OWASP Top 10) ---
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 app = FastAPI(title=settings.app_name)
 app.state.limiter = limiter
@@ -38,7 +44,7 @@ app.include_router(backlog.router)
 app.include_router(kanban.router)
 app.include_router(dailies.router)
 app.include_router(dashboard.router)
-
+app.include_router(uploads.router)
 
 @app.get("/api/v1/health")
 def health_check():

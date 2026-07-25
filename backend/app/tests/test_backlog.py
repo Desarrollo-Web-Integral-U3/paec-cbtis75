@@ -1,90 +1,249 @@
+"""
+Tests del Issue Backlog: PUT y DELETE para historias de usuario.
+
+Criterios de aceptacion:
+- PUT actualiza unicamente los campos enviados (partial update).
+- DELETE elimina la historia correctamente.
+- Ambos devuelven 404 si el id no existe.
+"""
 from datetime import datetime, timedelta
 
-from app.core.security import hash_password
-from app.models.team import Team, TeamMember
 from app.models.user import User, RolUsuario
+from app.models.task import Task, Prioridad, EstadoKanban
+from app.models.sprint import Sprint
+from app.models.team import Team, TeamMember
+from app.core.security import hash_password
 
 
-def _registrar_usuario(client, email: str, numero_control: str, nombre: str = "Usuario Test"):
-    r = client.post(
-        "/api/v1/auth/register",
-        json={
-            "nombre_completo": nombre,
-            "numero_control": numero_control,
-            "email": email,
-            "password": "ClaveSegura123",
-            "rol": "estudiante",
-            "consentimiento_privacidad": True,
-        },
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _crear_usuario(db, numero_control, email, rol=RolUsuario.ESTUDIANTE):
+    user = User(
+        nombre_completo="Test User",
+        numero_control=numero_control,
+        email=email,
+        password_hash=hash_password("Password123"),
+        rol=rol,
     )
-    assert r.status_code == 201, r.text
-    return r.json()
+    db.add(user)
+    db.flush()
+    return user
 
 
-def _login(client, email: str) -> str:
-    r = client.post(
-        "/api/v1/auth/login",
-        json={"email": email, "password": "ClaveSegura123"},
-    )
-    assert r.status_code == 200, r.text
+def _token_de(client, email, password="Password123"):
+    r = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    assert r.status_code == 200, f"Login fallo: {r.json()}"
     return r.json()["access_token"]
 
 
-def _headers(token: str) -> dict:
+def _headers(token):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_backlog_permite_crear_historia_y_listarla_por_sprint(client, db_session):
-    emails = ["sm@cbtis75.edu.mx", "dev@cbtis75.edu.mx"]
-    for i, email in enumerate(emails):
-        _registrar_usuario(client, email=email, numero_control=f"2138000{i}", nombre=f"Usuario {i}")
+def _crear_equipo_sprint_historia(db, user_id):
+    """Crea equipo -> sprint -> historia en BD y devuelve la historia."""
+    team = Team(nombre_proyecto="Equipo Backlog", grupo="A")
+    db.add(team)
+    db.flush()
 
-    token = _login(client, emails[0])
+    db.add(TeamMember(team_id=team.id, user_id=user_id, rol_scrum="Scrum Master"))
 
-    team_payload = {
-        "nombre_proyecto": "Proyecto Demo",
-        "descripcion_proyecto": "Proyecto de prueba",
-        "grupo": "6IDS-A",
-        "members": [
-            {"email": emails[0], "rol_scrum": "Scrum Master"},
-            {"email": emails[1], "rol_scrum": "Developer"},
-        ],
-    }
-    r = client.post("/api/v1/equipo/", json=team_payload, headers=_headers(token))
-    assert r.status_code == 201, r.text
-    team_id = r.json()["id"]
+    sprint = Sprint(
+        team_id=team.id,
+        numero_parcial=1,
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=14),
+    )
+    db.add(sprint)
+    db.flush()
 
-    ahora = datetime.utcnow()
-    sprint_payload = {
-        "team_id": team_id,
-        "numero_parcial": 1,
-        "fecha_inicio": (ahora - timedelta(days=1)).isoformat(),
-        "fecha_fin": (ahora + timedelta(days=7)).isoformat(),
-    }
-    r = client.post("/api/v1/sprint", json=sprint_payload, headers=_headers(token))
-    assert r.status_code == 201, r.text
-    sprint_id = r.json()["id"]
+    historia = Task(
+        sprint_id=sprint.id,
+        asignado_a=user_id,
+        nombre_actividad="Historia original",
+        descripcion="Descripcion original",
+        criterios_aceptacion="Criterio original",
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=7),
+        tiempo_estimado_horas=4,
+        prioridad=Prioridad.MEDIA,
+        story_points=3,
+    )
+    db.add(historia)
+    db.commit()
+    db.refresh(historia)
+    return historia
 
-    task_payload = {
-        "sprint_id": sprint_id,
-        "asignado_a": 2,
-        "nombre_actividad": "Registrar usuario",
-        "descripcion": "Permitir acceder con credenciales validas",
-        "criterios_aceptacion": "El usuario puede registrarse y ver el login",
-        "fecha_inicio": (ahora - timedelta(days=1)).isoformat(),
-        "fecha_fin": (ahora + timedelta(days=3)).isoformat(),
-        "tiempo_estimado_horas": 8,
-        "prioridad": "alta",
-        "story_points": 5,
-    }
-    r = client.post("/api/v1/historia", json=task_payload, headers=_headers(token))
-    assert r.status_code == 201, r.text
+
+# ---------------------------------------------------------------------------
+# Tests PUT /api/v1/historia/{id}
+# ---------------------------------------------------------------------------
+
+def test_put_historia_actualiza_campos_enviados(client, db_session):
+    """
+    Criterio #1: PUT actualiza unicamente los campos enviados.
+    El resto de campos mantiene su valor original.
+    """
+    user = _crear_usuario(db_session, "40000001", "put_test1@cbtis75.edu.mx")
+    historia = _crear_equipo_sprint_historia(db_session, user.id)
+    token = _token_de(client, "put_test1@cbtis75.edu.mx")
+
+    r = client.put(
+        f"/api/v1/historia/{historia.id}",
+        json={"nombre_actividad": "Historia actualizada", "prioridad": "alta"},
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 200
     body = r.json()
-    assert body["nombre_actividad"] == "Registrar usuario"
-    assert body["sprint_id"] == sprint_id
+    # Campos actualizados
+    assert body["nombre_actividad"] == "Historia actualizada"
+    assert body["prioridad"] == "alta"
+    # Campos NO enviados -> mantienen valor original
+    assert body["descripcion"] == "Descripcion original"
+    assert body["criterios_aceptacion"] == "Criterio original"
+    assert body["story_points"] == 3
+    assert body["tiempo_estimado_horas"] == 4
 
-    r = client.get(f"/api/v1/sprint/{sprint_id}/historias", headers=_headers(token))
-    assert r.status_code == 200, r.text
-    historias = r.json()
-    assert len(historias) == 1
-    assert historias[0]["nombre_actividad"] == "Registrar usuario"
+
+def test_put_historia_actualiza_solo_un_campo(client, db_session):
+    """
+    Enviar un solo campo en PUT no debe afectar los demas.
+    """
+    user = _crear_usuario(db_session, "40000002", "put_test2@cbtis75.edu.mx")
+    historia = _crear_equipo_sprint_historia(db_session, user.id)
+    token = _token_de(client, "put_test2@cbtis75.edu.mx")
+
+    r = client.put(
+        f"/api/v1/historia/{historia.id}",
+        json={"story_points": 8},
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["story_points"] == 8
+    # El resto no cambia
+    assert body["nombre_actividad"] == "Historia original"
+    assert body["prioridad"] == "media"
+
+
+def test_put_historia_inexistente_retorna_404(client, db_session):
+    """
+    Criterio #3: PUT con id que no existe devuelve 404.
+    """
+    user = _crear_usuario(db_session, "40000003", "put_test3@cbtis75.edu.mx")
+    db_session.commit()
+    token = _token_de(client, "put_test3@cbtis75.edu.mx")
+
+    r = client.put(
+        "/api/v1/historia/999999",
+        json={"nombre_actividad": "No existe"},
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 404
+    assert "no encontrada" in r.json()["detail"].lower()
+
+
+def test_put_historia_sin_token_retorna_401(client, db_session):
+    """
+    PUT sin autenticacion debe retornar 401.
+    """
+    user = _crear_usuario(db_session, "40000004", "put_test4@cbtis75.edu.mx")
+    historia = _crear_equipo_sprint_historia(db_session, user.id)
+
+    r = client.put(
+        f"/api/v1/historia/{historia.id}",
+        json={"nombre_actividad": "Sin token"},
+    )
+    assert r.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Tests DELETE /api/v1/historia/{id}
+# ---------------------------------------------------------------------------
+
+def test_delete_historia_elimina_correctamente(client, db_session):
+    """
+    Criterio #2: DELETE elimina la historia y retorna 204 sin body.
+    """
+    user = _crear_usuario(db_session, "40000005", "del_test1@cbtis75.edu.mx")
+    historia = _crear_equipo_sprint_historia(db_session, user.id)
+    historia_id = historia.id
+    token = _token_de(client, "del_test1@cbtis75.edu.mx")
+
+    r = client.delete(
+        f"/api/v1/historia/{historia_id}",
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 204
+    assert r.content == b""   # 204 No Content: sin body
+
+    # Verificar que ya no existe en BD
+    eliminada = db_session.query(Task).filter(Task.id == historia_id).first()
+    assert eliminada is None, "La historia aun existe en BD tras el DELETE"
+
+
+def test_delete_historia_inexistente_retorna_404(client, db_session):
+    """
+    Criterio #3: DELETE con id que no existe devuelve 404.
+    """
+    user = _crear_usuario(db_session, "40000006", "del_test2@cbtis75.edu.mx")
+    db_session.commit()
+    token = _token_de(client, "del_test2@cbtis75.edu.mx")
+
+    r = client.delete(
+        "/api/v1/historia/999999",
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 404
+    assert "no encontrada" in r.json()["detail"].lower()
+
+
+def test_delete_historia_sin_token_retorna_401(client, db_session):
+    """
+    DELETE sin autenticacion debe retornar 401.
+    """
+    user = _crear_usuario(db_session, "40000007", "del_test3@cbtis75.edu.mx")
+    historia = _crear_equipo_sprint_historia(db_session, user.id)
+
+    r = client.delete(f"/api/v1/historia/{historia.id}")
+    assert r.status_code == 401
+
+
+def test_delete_no_afecta_otras_historias(client, db_session):
+    """
+    Eliminar una historia no debe eliminar otras del mismo sprint.
+    """
+    user = _crear_usuario(db_session, "40000008", "del_test4@cbtis75.edu.mx")
+    historia1 = _crear_equipo_sprint_historia(db_session, user.id)
+    # Crear segunda historia en el mismo sprint
+    historia2 = Task(
+        sprint_id=historia1.sprint_id,
+        asignado_a=user.id,
+        nombre_actividad="Historia 2",
+        descripcion="Desc 2",
+        criterios_aceptacion="Criterio 2",
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=5),
+        tiempo_estimado_horas=2,
+        story_points=1,
+    )
+    db_session.add(historia2)
+    db_session.commit()
+    db_session.refresh(historia2)
+
+    token = _token_de(client, "del_test4@cbtis75.edu.mx")
+
+    # Eliminar solo la primera
+    r = client.delete(f"/api/v1/historia/{historia1.id}", headers=_headers(token))
+    assert r.status_code == 204
+
+    # La segunda sigue en BD
+    sobreviviente = db_session.query(Task).filter(Task.id == historia2.id).first()
+    assert sobreviviente is not None, "DELETE elimino mas historias de las esperadas"

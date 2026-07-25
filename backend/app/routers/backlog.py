@@ -90,3 +90,47 @@ def listar_sprints_por_equipo(
 ):
     repo = BaseRepository(db, Sprint)
     return db.query(Sprint).filter(Sprint.team_id == team_id).order_by(Sprint.numero_parcial.asc()).all()
+
+
+@router.put("/historia/{historia_id}", response_model=TaskOut)
+def actualizar_historia(
+    historia_id: int,
+    payload: TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role("estudiante", "scrum_master")),
+):
+    """
+    Actualiza solo los campos enviados en la petición (partial update).
+    Los campos no incluidos en el body mantienen su valor actual en BD.
+    Responde 404 si el id no existe.
+    """
+    repo = BaseRepository(db, Task)
+    historia = repo.get_by_id(historia_id)
+    if not historia:
+        raise HTTPException(status_code=404, detail="Historia de usuario no encontrada.")
+
+    # exclude_unset=True: solo itera los campos que el cliente envio explicitamente,
+    # evitando sobrescribir con None campos que no venian en la peticion.
+    cambios = payload.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
+        setattr(historia, campo, valor)
+
+    return repo.update(historia)
+
+
+@router.delete("/historia/{historia_id}", status_code=204)
+def eliminar_historia(
+    historia_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role("estudiante", "scrum_master")),
+):
+    """
+    Elimina la historia de usuario indicada.
+    Responde 404 si el id no existe, 204 sin body si se eliminó correctamente.
+    """
+    repo = BaseRepository(db, Task)
+    historia = repo.get_by_id(historia_id)
+    if not historia:
+        raise HTTPException(status_code=404, detail="Historia de usuario no encontrada.")
+
+    repo.delete(historia)
