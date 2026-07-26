@@ -46,6 +46,24 @@ def crear_historia(
     return repo.create(Task(**payload.model_dump()))
 
 
+@router.put("/historia/{historia_id}", response_model=TaskOut)
+def actualizar_historia(
+    historia_id: int,
+    payload: TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role("estudiante", "scrum_master")),
+):
+    repo = BaseRepository(db, Task)
+    historia = repo.get_by_id(historia_id)
+    if not historia:
+        raise HTTPException(status_code=404, detail="Historia no encontrada.")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(historia, field, value)
+
+    return repo.update(historia)
+
+
 @router.get("/sprint/{sprint_id}/historias", response_model=list[TaskOut])
 def listar_historias_de_sprint(
     sprint_id: int,
@@ -53,6 +71,25 @@ def listar_historias_de_sprint(
     current_user=Depends(get_current_user),
 ):
     return TaskRepository(db).list_by_sprint(sprint_id)
+
+
+@router.get("/equipo/{team_id}/historias", response_model=list[TaskOut])
+def listar_historias_por_equipo(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return TaskRepository(db).list_by_team(team_id)
+
+
+@router.get("/equipo/{team_id}/sprints", response_model=list[SprintOut])
+def listar_sprints_por_equipo(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    repo = BaseRepository(db, Sprint)
+    return db.query(Sprint).filter(Sprint.team_id == team_id).order_by(Sprint.numero_parcial.asc()).all()
 
 
 @router.put("/historia/{historia_id}", response_model=TaskOut)

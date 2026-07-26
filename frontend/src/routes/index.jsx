@@ -6,6 +6,7 @@ import DesignSprint from "../pages/DesignSprint";
 import KanbanBoard from "../pages/KanbanBoard";
 import Dailies from "../pages/Dailies";
 import Dashboard from "../pages/Dashboard";
+import Backlog from "../pages/Backlog";
 import RoleGuard from "../components/RoleGuard";
 import Intro from "../pages/Intro";
 
@@ -17,6 +18,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/equipo" element={<TeamSetup />} />
       <Route path="/design-sprint" element={<DesignSprint />} />
+      <Route path="/backlog" element={<Backlog teamId={1} />} />
       <Route path="/kanban" element={<KanbanBoard teamId={1} />} />
       <Route path="/dailies" element={<Dailies teamId={1} />} />
       <Route

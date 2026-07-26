@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests del Issue Backlog: PUT y DELETE para historias de usuario.
 
 Criterios de aceptacion:

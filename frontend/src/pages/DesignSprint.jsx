@@ -19,7 +19,9 @@ export default function DesignSprint() {
   const [teamId, setTeamId] = useState(null);
   const [dias, setDias] = useState([]);
   const [planesDraft, setPlanesDraft] = useState({});
+  const [feedbackDrafts, setFeedbackDrafts] = useState({});
   const [cargandoPlan, setCargandoPlan] = useState({});
+  const [cargandoFeedback, setCargandoFeedback] = useState({});
   const [cargandoEvidencia, setCargandoEvidencia] = useState({});
   const [archivosLocales, setArchivosLocales] = useState({});
   const [errorBackend, setErrorBackend] = useState("");
@@ -68,13 +70,13 @@ export default function DesignSprint() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  if (userRole !== "estudiante") {
+  if (userRole !== "estudiante" && userRole !== "docente") {
     return (
       <div className="ds-page">
         <header className="ds-header">
           <h2 className="ds-title">Acceso Denegado</h2>
           <p className="ds-subtitle">
-            Esta vista de Design Sprint es exclusiva para el rol de estudiante.
+            Esta vista de Design Sprint solo está disponible para estudiantes y docentes.
           </p>
         </header>
       </div>
@@ -155,6 +157,26 @@ export default function DesignSprint() {
       setErrorBackend("No se pudo subir la evidencia. Intenta con otro archivo.");
     } finally {
       setCargandoEvidencia((prev) => ({ ...prev, [diaKey]: false }));
+    }
+  };
+
+  const enviarFeedback = async (dayId, diaKey) => {
+    const comentario = feedbackDrafts[diaKey]?.trim();
+    if (!comentario) return;
+
+    setErrorBackend("");
+    setCargandoFeedback((prev) => ({ ...prev, [diaKey]: true }));
+
+    try {
+      const { data } = await api.post(`/api/v1/design-sprint/${dayId}/feedback`, {
+        comentario_docente: comentario,
+      });
+      setDias((prev) => prev.map((d) => (d.id === data.id ? data : d)));
+      setFeedbackDrafts((prev) => ({ ...prev, [diaKey]: "" }));
+    } catch (err) {
+      setErrorBackend("No se pudo guardar el comentario. Intenta nuevamente.");
+    } finally {
+      setCargandoFeedback((prev) => ({ ...prev, [diaKey]: false }));
     }
   };
 
@@ -354,16 +376,28 @@ export default function DesignSprint() {
                       </button>
                     </>
                   )}
-                  {/* Retroalimentación del docente - Panel Informativo (RBAC) */}
                   <div className="ds-feedback-panel">
                     <div className="ds-feedback-header">
                       <span className="ds-feedback-label">Retroalimentación del docente</span>
                     </div>
                     <hr className="ds-feedback-divider" />
                     {userRole === "docente" ? (
-                      <p className="ds-feedback-text ds-feedback-text--muted">
-                        [Vista de Docente] Aquí se habilitará la edición de comentarios.
-                      </p>
+                      <>
+                        <textarea
+                          rows={3}
+                          placeholder="Deja un comentario para el equipo..."
+                          value={feedbackDrafts[dia.key] ?? registro.comentario_docente ?? ""}
+                          onChange={(e) => setFeedbackDrafts((prev) => ({ ...prev, [dia.key]: e.target.value }))}
+                          className="ds-textarea ds-textarea--feedback"
+                        />
+                        <button
+                          onClick={() => enviarFeedback(registro.id, dia.key)}
+                          disabled={cargandoFeedback[dia.key] || !(feedbackDrafts[dia.key]?.trim())}
+                          className={`ds-save-button ${cargandoFeedback[dia.key] || !(feedbackDrafts[dia.key]?.trim()) ? 'ds-save-button--disabled' : ''}`}
+                        >
+                          {cargandoFeedback[dia.key] ? "Guardando…" : "Guardar comentario"}
+                        </button>
+                      </>
                     ) : (
                       <p className="ds-feedback-text">
                         {registro.comentario_docente || "Aún no hay retroalimentación para este día."}
