@@ -247,3 +247,59 @@ def test_delete_no_afecta_otras_historias(client, db_session):
     # La segunda sigue en BD
     sobreviviente = db_session.query(Task).filter(Task.id == historia2.id).first()
     assert sobreviviente is not None, "DELETE elimino mas historias de las esperadas"
+
+
+# ---------------------------------------------------------------------------
+# Tests validador de fechas en POST /api/v1/historia
+# ---------------------------------------------------------------------------
+
+def test_crear_historia_fecha_fin_anterior_a_inicio_devuelve_422(client, db_session):
+    """
+    Criterio: al crear una historia con fecha_fin < fecha_inicio, el endpoint
+    debe rechazar con 422 y un mensaje claro que indique el problema.
+
+    El validator vive en el schema TaskCreate (@model_validator) — arroja
+    ValueError que FastAPI convierte automáticamente a 422 con detail.msg
+    que incluye el mensaje del ValueError.
+    """
+    # Preparar un usuario, equipo y sprint para tener un sprint_id válido
+    user = _crear_usuario(db_session, "50000001", "fechas_test@cbtis75.edu.mx")
+    team = Team(nombre_proyecto="Equipo Fechas", grupo="B")
+    db_session.add(team)
+    db_session.flush()
+    db_session.add(TeamMember(team_id=team.id, user_id=user.id, rol_scrum="Scrum Master"))
+    sprint = Sprint(
+        team_id=team.id,
+        numero_parcial=1,
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=14),
+    )
+    db_session.add(sprint)
+    db_session.commit()
+    db_session.refresh(sprint)
+
+    token = _token_de(client, "fechas_test@cbtis75.edu.mx")
+
+    # Payload inválido: fecha_fin ANTES que fecha_inicio
+    ahora = datetime.utcnow()
+    payload = {
+        "sprint_id": sprint.id,
+        "nombre_actividad": "Historia con fechas invertidas",
+        "descripcion": "Descripcion",
+        "criterios_aceptacion": "Criterio",
+        "fecha_inicio": (ahora + timedelta(days=5)).isoformat(),
+        "fecha_fin": ahora.isoformat(),  # anterior a fecha_inicio -> DEBE fallar
+        "tiempo_estimado_horas": 4,
+        "story_points": 3,
+    }
+
+    r = client.post("/api/v1/historia", json=payload, headers=_headers(token))
+
+    assert r.status_code == 422, f"Se esperaba 422 pero llegó {r.status_code}: {r.text}"
+
+    # El mensaje debe ser CLARO: menciona los dos campos involucrados.
+    # Pydantic devuelve el detail como lista de objetos con 'msg'.
+    detail = r.json()["detail"]
+    mensajes = " ".join(err["msg"].lower() for err in detail)
+    assert "fecha_fin" in mensajes
+    assert "fecha_inicio" in mensajes
