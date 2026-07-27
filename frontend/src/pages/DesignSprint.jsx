@@ -67,7 +67,6 @@ export default function DesignSprint() {
 
   useEffect(() => {
     cargarEquipo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (userRole !== "estudiante" && userRole !== "docente") {
