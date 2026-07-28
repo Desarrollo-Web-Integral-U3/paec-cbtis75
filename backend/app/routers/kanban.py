@@ -7,6 +7,9 @@ from app.models.task import Task, EstadoKanban
 from app.repositories.base_repository import BaseRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task import TaskMoveKanban, TaskApprove, TaskOut
+from app.services.evidence_notification_service import (
+    notificar_scrum_master_evidencia_nueva,
+)
 
 router = APIRouter(prefix="/api/v1/historia", tags=["kanban"])
 
@@ -43,13 +46,31 @@ def mover_tarea(
             detail="Para marcar como Terminado debes adjuntar evidencia o comentario.",
         )
 
+    # Capturamos la URL previa ANTES de aplicar el update para detectar si
+    # la evidencia realmente cambió y así evitar re-notificar al Scrum Master
+    # cuando el cliente reenvía la misma URL (ej. reintentos de red).
+    url_anterior = task.evidencia_url
+
     task.estado_kanban = payload.nuevo_estado
     if payload.evidencia_url:
         task.evidencia_url = payload.evidencia_url
     if payload.comentario:
         task.comentario = payload.comentario
 
-    return repo.update(task)
+    task_actualizada = repo.update(task)
+
+    # Disparo de la notificación: solo si esta petición trajo una evidencia
+    # nueva (o distinta a la anterior) Y la tarea todavía no ha sido aprobada
+    # por el Scrum Master. El servicio se encarga de encontrar al destinatario,
+    # enviar el aviso y dejar el registro en logs.
+    if (
+        payload.evidencia_url
+        and payload.evidencia_url != url_anterior
+        and not task_actualizada.aprobado_por_scrum_master
+    ):
+        notificar_scrum_master_evidencia_nueva(db, task_actualizada)
+
+    return task_actualizada
 
 
 @router.patch("/{task_id}/aprobar", response_model=TaskOut)
