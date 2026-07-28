@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.task import Task, EstadoKanban
@@ -22,6 +23,22 @@ class TaskRepository(BaseRepository[Task]):
             .filter(Sprint.team_id == team_id)
             .all()
         )
+
+    def sum_horas_estimadas(self, team_id: int) -> int:
+        """
+        Devuelve la suma de tiempo_estimado_horas de todas las tareas
+        del equipo (a traves de sus sprints). Retorna 0 si no hay tareas.
+        Usado por el endpoint GET /equipo/{id}/capacidad para calcular
+        el esfuerzo ya asignado al equipo.
+        """
+        from app.models.sprint import Sprint
+        resultado = (
+            self.db.query(func.sum(Task.tiempo_estimado_horas))
+            .join(Sprint, Task.sprint_id == Sprint.id)
+            .filter(Sprint.team_id == team_id)
+            .scalar()
+        )
+        return resultado or 0  # scalar() devuelve None si no hay filas
 
     def list_overdue_incomplete(self, team_id: int) -> list[Task]:
         """Tareas vencidas y aún no terminadas -> usado por AlertStrategy."""

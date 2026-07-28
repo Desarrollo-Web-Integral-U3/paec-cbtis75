@@ -303,3 +303,122 @@ def test_crear_historia_fecha_fin_anterior_a_inicio_devuelve_422(client, db_sess
     mensajes = " ".join(err["msg"].lower() for err in detail)
     assert "fecha_fin" in mensajes
     assert "fecha_inicio" in mensajes
+
+
+# ---------------------------------------------------------------------------
+# Tests del campo horas_disponibles y endpoint GET /equipo/{id}/capacidad
+# ---------------------------------------------------------------------------
+
+def test_capacidad_equipo_calcula_suma_correcta(client, db_session):
+    """
+    Criterio principal: el endpoint devuelve la suma exacta de
+    tiempo_estimado_horas de todas las tareas del equipo.
+    """
+    user = _crear_usuario(db_session, "50000001", "cap_test1@cbtis75.edu.mx")
+    historia = _crear_equipo_sprint_historia(db_session, user.id)
+    team_id = db_session.query(Sprint).filter(Sprint.id == historia.sprint_id).first().team_id
+
+    # Agregar una segunda tarea al mismo sprint para sumar mas horas
+    historia2 = Task(
+        sprint_id=historia.sprint_id,
+        asignado_a=user.id,
+        nombre_actividad="Segunda tarea",
+        descripcion="Desc",
+        criterios_aceptacion="Criterio",
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=5),
+        tiempo_estimado_horas=6,
+        story_points=2,
+    )
+    db_session.add(historia2)
+    db_session.commit()
+
+    token = _token_de(client, "cap_test1@cbtis75.edu.mx")
+    r = client.get(f"/api/v1/equipo/{team_id}/capacidad", headers=_headers(token))
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["team_id"] == team_id
+    # historia tiene 4h, historia2 tiene 6h -> total 10h
+    assert body["horas_asignadas"] == 10, (
+        f"Se esperaban 10 horas asignadas (4+6), se obtuvo {body['horas_asignadas']}"
+    )
+
+
+def test_capacidad_equipo_sin_tareas_retorna_cero(client, db_session):
+    """
+    Cuando el equipo no tiene ninguna tarea, horas_asignadas debe ser 0.
+    """
+    user = _crear_usuario(db_session, "50000002", "cap_test2@cbtis75.edu.mx")
+    team = Team(nombre_proyecto="Equipo Vacio", grupo="B", horas_disponibles=80)
+    db_session.add(team)
+    db_session.flush()
+    db_session.add(TeamMember(team_id=team.id, user_id=user.id, rol_scrum="Scrum Master"))
+    db_session.commit()
+
+    token = _token_de(client, "cap_test2@cbtis75.edu.mx")
+    r = client.get(f"/api/v1/equipo/{team.id}/capacidad", headers=_headers(token))
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["horas_asignadas"] == 0
+    assert body["horas_disponibles"] == 80
+    assert body["horas_restantes"] == 80
+
+
+def test_capacidad_equipo_refleja_horas_disponibles_declaradas(client, db_session):
+    """
+    horas_disponibles y horas_restantes se calculan correctamente,
+    incluyendo el caso de sobrecarga (horas_restantes negativo).
+    """
+    user = _crear_usuario(db_session, "50000003", "cap_test3@cbtis75.edu.mx")
+    # Equipo con solo 5 horas disponibles
+    team = Team(nombre_proyecto="Equipo Sobrecargado", grupo="C", horas_disponibles=5)
+    db_session.add(team)
+    db_session.flush()
+    db_session.add(TeamMember(team_id=team.id, user_id=user.id, rol_scrum="Scrum Master"))
+    sprint = Sprint(
+        team_id=team.id, numero_parcial=1,
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=14),
+    )
+    db_session.add(sprint)
+    db_session.flush()
+    # Tarea con 10 horas > 5 disponibles -> sobrecarga
+    tarea = Task(
+        sprint_id=sprint.id, asignado_a=user.id,
+        nombre_actividad="Tarea pesada", descripcion="D", criterios_aceptacion="C",
+        fecha_inicio=datetime.utcnow(), fecha_fin=datetime.utcnow() + timedelta(days=7),
+        tiempo_estimado_horas=10, story_points=5,
+    )
+    db_session.add(tarea)
+    db_session.commit()
+
+    token = _token_de(client, "cap_test3@cbtis75.edu.mx")
+    r = client.get(f"/api/v1/equipo/{team.id}/capacidad", headers=_headers(token))
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["horas_disponibles"] == 5
+    assert body["horas_asignadas"] == 10
+    assert body["horas_restantes"] == -5  # sobrecarga
+
+
+def test_capacidad_equipo_inexistente_retorna_404(client, db_session):
+    """
+    Criterio: el endpoint devuelve 404 si el equipo no existe.
+    """
+    user = _crear_usuario(db_session, "50000004", "cap_test4@cbtis75.edu.mx")
+    db_session.commit()
+    token = _token_de(client, "cap_test4@cbtis75.edu.mx")
+
+    r = client.get("/api/v1/equipo/999999/capacidad", headers=_headers(token))
+    assert r.status_code == 404
+
+
+def test_capacidad_equipo_sin_token_retorna_401(client):
+    """
+    El endpoint de capacidad requiere autenticacion.
+    """
+    r = client.get("/api/v1/equipo/1/capacidad")
+    assert r.status_code == 401
