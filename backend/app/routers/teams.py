@@ -22,8 +22,9 @@ from app.core.dependencies import get_current_user
 from app.models.design_sprint import DesignSprintDay, DiaDesignSprint
 from app.models.team import Team, TeamMember
 from app.repositories.base_repository import BaseRepository
+from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.team import TeamCreate, TeamMemberOut, TeamOut
+from app.schemas.team import TeamCreate, TeamMemberOut, TeamOut, CapacidadOut
 
 router = APIRouter(prefix="/api/v1/equipo", tags=["equipos"])
 
@@ -142,3 +143,31 @@ def obtener_equipo(
         raise HTTPException(status_code=403, detail="No autorizado para ver este equipo.")
 
     return _serialize_team(team)
+
+
+@router.get("/{team_id}/capacidad", response_model=CapacidadOut)
+def obtener_capacidad(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Devuelve la capacidad del equipo vs el esfuerzo ya asignado.
+    - horas_disponibles: las que el equipo declaro al crear/actualizar el equipo.
+    - horas_asignadas:   suma de tiempo_estimado_horas de TODAS sus tareas.
+    - horas_restantes:   diferencia (negativa = sobrecarga).
+    Base para las vistas de capacidad del dashboard.
+    """
+    repo = BaseRepository(db, Team)
+    team = repo.get_by_id(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Equipo no encontrado.")
+
+    horas_asignadas = TaskRepository(db).sum_horas_estimadas(team_id)
+
+    return CapacidadOut(
+        team_id=team_id,
+        horas_disponibles=team.horas_disponibles,
+        horas_asignadas=horas_asignadas,
+        horas_restantes=team.horas_disponibles - horas_asignadas,
+    )

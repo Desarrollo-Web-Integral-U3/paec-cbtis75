@@ -17,6 +17,10 @@ class Team(Base):
     nombre_proyecto = Column(String(150), nullable=False)
     descripcion_proyecto = Column(String(500), nullable=True)
     grupo = Column(String(30), nullable=True)  # p.ej. GIDS6O81-E
+    # Capacidad del equipo en horas (base para vistas de dashboard).
+    # El equipo lo declara al inicio del sprint; el endpoint GET /equipo/{id}/capacidad
+    # lo compara contra la suma de tiempo_estimado_horas de sus tareas.
+    horas_disponibles = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
