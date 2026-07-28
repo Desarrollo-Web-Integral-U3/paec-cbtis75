@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+
 import api from "../api/client";
+import GanttChart from "../components/dashboard/GanttChart";
 
 export default function Dashboard({ teamId }) {
   const [resumen, setResumen] = useState(null);
@@ -44,23 +46,8 @@ export default function Dashboard({ teamId }) {
         </BarChart>
       </ResponsiveContainer>
 
-      <h3>Gantt (tabla simplificada — sustituir por librería de Gantt)</h3>
-      {/* TODO: reemplazar por 'frappe-gantt' o 'gantt-task-react' */}
-      <table>
-        <thead>
-          <tr><th>Tarea</th><th>Inicio</th><th>Fin</th><th>Estado</th></tr>
-        </thead>
-        <tbody>
-          {resumen.gantt.map((g) => (
-            <tr key={g.id}>
-              <td>{g.nombre}</td>
-              <td>{new Date(g.inicio).toLocaleDateString()}</td>
-              <td>{new Date(g.fin).toLocaleDateString()}</td>
-              <td>{g.estado}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h3>Cronograma (Gantt)</h3>
+      <GanttChart rows={resumen.gantt} />
     </div>
   );
 }

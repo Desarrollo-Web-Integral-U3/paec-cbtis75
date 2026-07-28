@@ -15,9 +15,16 @@ export default function Login() {
     setError("");
     try {
       const { data } = await api.post("/api/v1/auth/login", { email, password });
-      // TODO: pedir /api/v1/auth/me (o decodificar el JWT) para obtener
-      // el perfil completo del usuario y guardarlo junto al token.
-      login(data.access_token, { rol: "estudiante" });
+      // El JWT lleva el rol en el payload (backend: create_access_token con
+      // {"sub": id, "rol": rol}). Se decodifica en el cliente (base64) para
+      // que el zustand store tenga el rol real y RoleGuard pueda evaluar
+      // las rutas protegidas. La firma del JWT sigue validandola el backend
+      // en cada request; esto es solo lectura de un dato publico.
+      const payload = JSON.parse(atob(data.access_token.split(".")[1]));
+      login(data.access_token, {
+        id: parseInt(payload.sub, 10),
+        rol: payload.rol,
+      });
       navigate("/dashboard");
     } catch {
       setError("Correo o contraseña incorrectos.");
