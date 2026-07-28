@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.factories.notification_factory import NotificationFactory
 from app.models.alert import Alert
-from app.models.team import TeamMember
+from app.models.team import Team, TeamMember
 from app.strategies.alert_strategy import ALERT_STRATEGIES
 
 
@@ -42,3 +42,20 @@ class AlertService:
                 self.notifier.send(destinatario, alerta.mensaje)
 
         return nuevas_alertas
+
+    def evaluar_todos(self) -> dict:
+        """
+        Ejecuta la evaluacion de alertas para TODOS los equipos registrados.
+        Diseñado para jobs programados (GitHub Actions cron, Render Cron)
+        que no reciben un team_id especifico. Retorna un resumen con el
+        conteo de equipos evaluados y alertas nuevas creadas.
+        """
+        teams = self.db.query(Team).all()
+        total_alertas = 0
+        for team in teams:
+            nuevas = self.evaluar_equipo(team.id)
+            total_alertas += len(nuevas)
+        return {
+            "equipos_evaluados": len(teams),
+            "alertas_nuevas": total_alertas,
+        }

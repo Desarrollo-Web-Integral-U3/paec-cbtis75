@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     cloudinary_api_key: str = ""
     cloudinary_api_secret: str = ""
 
+    # --- Cron interno ---
+    # Secreto compartido con los jobs programados (GitHub Actions, Render Cron)
+    # para autenticar endpoints /api/v1/cron/* sin necesidad de JWT. Se rota
+    # cambiando este valor en el .env del backend y en el secret del repo.
+    cron_secret: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

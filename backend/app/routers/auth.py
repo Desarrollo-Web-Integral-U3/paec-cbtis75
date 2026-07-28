@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import require_role
 from app.core.security import hash_password, verify_password, create_access_token
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserCreatePublic, UserOut, UserLogin, Token
@@ -99,6 +99,7 @@ def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": str(user.id), "rol": user.rol.value})
     return Token(access_token=token)
+
 
 @router.post("/token", response_model=Token, include_in_schema=False)
 def token(
