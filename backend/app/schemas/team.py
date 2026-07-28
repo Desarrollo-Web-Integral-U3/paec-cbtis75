@@ -44,6 +44,9 @@ class TeamCreate(BaseModel):
     nombre_proyecto: str = Field(min_length=3, max_length=150)
     descripcion_proyecto: str | None = Field(default=None, max_length=500)
     grupo: str | None = Field(default=None, max_length=30)
+    # Capacidad total del equipo en horas para el sprint.
+    # Se puede declarar al crear el equipo o actualizar despues.
+    horas_disponibles: int = Field(default=0, ge=0)
     members: list[TeamMemberInput] = Field(min_length=2, max_length=4)
 
     model_config = ConfigDict(extra="forbid")
@@ -94,9 +97,24 @@ class TeamOut(BaseModel):
     nombre_proyecto: str
     descripcion_proyecto: str | None
     grupo: str | None
+    horas_disponibles: int
     members: list[TeamMemberOut]
     # Issue #8: los 5 dias del Design Sprint se incluyen en la respuesta
     # para que el frontend no necesite una segunda llamada al crear el equipo.
     design_sprint_days: list[DesignSprintDayOut] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CapacidadOut(BaseModel):
+    """
+    Response del endpoint GET /equipo/{id}/capacidad.
+    Permite al frontend comparar la carga ya asignada contra la
+    capacidad total del equipo (base para las vistas del dashboard).
+    """
+    team_id: int
+    horas_disponibles: int
+    horas_asignadas: int   # suma de tiempo_estimado_horas de todas las tareas
+    horas_restantes: int   # horas_disponibles - horas_asignadas (puede ser negativo si hay sobrecarga)
 
     model_config = ConfigDict(from_attributes=True)
