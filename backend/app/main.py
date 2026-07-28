@@ -15,6 +15,7 @@ from app.routers import (
     dailies,
     dashboard,
     uploads,
+    cron,
 )
 
 settings = get_settings()
@@ -45,6 +46,8 @@ app.include_router(kanban.router)
 app.include_router(dailies.router)
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
+app.include_router(cron.router)
+
 
 @app.get("/api/v1/health")
 def health_check():

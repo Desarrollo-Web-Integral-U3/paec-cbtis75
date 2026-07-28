@@ -1,0 +1,51 @@
+name: Alertas - evaluacion diaria
+
+# Job programado que invoca el endpoint interno del backend para que
+# recorra todos los equipos y ejecute las estrategias de alerta
+# (Strategy Pattern) sin intervencion manual.
+#
+# - schedule: todos los dias a las 14:00 UTC (= 08:00 CDMX/CST).
+#     El horario de GitHub Actions es UTC y el cron NO garantiza el
+#     minuto exacto (puede tardar unos minutos en encolar).
+# - workflow_dispatch: permite disparar el workflow a mano desde la
+#     pestana Actions con el boton "Run workflow", util para pruebas y
+#     para verificar la ejecucion antes de que llegue la hora del cron.
+#
+# Secrets requeridos en el repositorio
+# (Settings > Secrets and variables > Actions > New repository secret):
+#   - BACKEND_URL   : URL publica del backend en Render, sin slash final.
+#                     Ejemplo: https://paec-backend.onrender.com
+#   - CRON_SECRET   : mismo valor que la variable CRON_SECRET del backend.
+
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  evaluar-alertas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invocar POST /api/v1/cron/evaluar-alertas
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BACKEND_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Faltan secrets BACKEND_URL o CRON_SECRET en el repositorio."
+            exit 1
+          fi
+
+          echo "POST ${BACKEND_URL}/api/v1/cron/evaluar-alertas"
+
+          # -sS: silencioso pero muestra errores en stderr.
+          # -f : sale con codigo != 0 si el servidor responde >= 400.
+          # -H : header con el secret compartido.
+          curl -sSf -X POST \
+            -H "X-Cron-Secret: ${CRON_SECRET}" \
+            "${BACKEND_URL}/api/v1/cron/evaluar-alertas"
+
+          echo
+          echo "Evaluacion de alertas completada correctamente."

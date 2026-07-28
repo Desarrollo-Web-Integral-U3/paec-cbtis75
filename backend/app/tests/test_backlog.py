@@ -9,7 +9,7 @@ Criterios de aceptacion:
 from datetime import datetime, timedelta
 
 from app.models.user import User, RolUsuario
-from app.models.task import Task, Prioridad, EstadoKanban
+from app.models.task import Task, Prioridad
 from app.models.sprint import Sprint
 from app.models.team import Team, TeamMember
 from app.core.security import hash_password
@@ -134,7 +134,7 @@ def test_put_historia_inexistente_retorna_404(client, db_session):
     """
     Criterio #3: PUT con id que no existe devuelve 404.
     """
-    user = _crear_usuario(db_session, "40000003", "put_test3@cbtis75.edu.mx")
+    _crear_usuario(db_session, "40000003", "put_test3@cbtis75.edu.mx")
     db_session.commit()
     token = _token_de(client, "put_test3@cbtis75.edu.mx")
 
@@ -192,7 +192,7 @@ def test_delete_historia_inexistente_retorna_404(client, db_session):
     """
     Criterio #3: DELETE con id que no existe devuelve 404.
     """
-    user = _crear_usuario(db_session, "40000006", "del_test2@cbtis75.edu.mx")
+    _crear_usuario(db_session, "40000006", "del_test2@cbtis75.edu.mx")
     db_session.commit()
     token = _token_de(client, "del_test2@cbtis75.edu.mx")
 

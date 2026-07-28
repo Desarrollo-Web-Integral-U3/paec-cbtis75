@@ -13,15 +13,17 @@ endpoint. Aquí definimos:
 Esto es exactamente lo que pide la Actividad 1 (Control de accesos estricto -
 RBAC) y la Actividad 3 (Autenticación y Autorización con JWT).
 """
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.repositories.user_repository import UserRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -50,3 +52,29 @@ def require_role(*allowed_roles: str):
         return current_user
 
     return _dependency
+
+
+def verify_cron_secret(x_cron_secret: str | None = Header(default=None)):
+    """
+    Dependency para proteger endpoints internos disparados por jobs
+    programados (GitHub Actions cron, Render Cron). Valida que el header
+    X-Cron-Secret coincida con la variable de entorno CRON_SECRET.
+
+    Se usa en lugar de JWT porque un job programado no puede autenticarse
+    como un usuario real. Cumple el principio de menor privilegio: el
+    secret solo permite invocar endpoints /cron/*, nada mas.
+    """
+    settings = get_settings()
+    if not settings.cron_secret:
+        # 503 en vez de 401: el servidor esta mal configurado, no es
+        # culpa del cliente.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="CRON_SECRET no configurado en el servidor.",
+        )
+    if not x_cron_secret or x_cron_secret != settings.cron_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cron secret invalido o ausente.",
+        )
+    return True

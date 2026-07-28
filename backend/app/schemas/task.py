@@ -79,7 +79,6 @@ class TaskUpdate(BaseModel):
         return self
 
 
-
 class TaskMoveKanban(BaseModel):
     """
     Para mover una tarea en el Kanban (p.ej. a 'terminado') es OBLIGATORIO

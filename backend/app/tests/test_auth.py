@@ -345,6 +345,7 @@ def test_register_guarda_consentimiento_y_fecha_en_bd(client, db_session):
     assert body["consentimiento_privacidad"] is True
     assert body["fecha_consentimiento"] is not None
 
+
 def test_token_endpoint_acepta_form_encoded(client):
     """
     El endpoint /token (usado por Swagger Authorize) acepta credenciales
