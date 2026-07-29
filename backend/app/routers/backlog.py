@@ -7,7 +7,7 @@ from app.models.sprint import Sprint
 from app.models.task import Task
 from app.repositories.base_repository import BaseRepository
 from app.repositories.task_repository import TaskRepository
-from app.schemas.task import SprintCreate, SprintOut, TaskCreate, TaskOut, TaskUpdate
+from app.schemas.task import SprintApprovalUpdate, SprintCreate, SprintOut, TaskCreate, TaskOut, TaskUpdate
 
 router = APIRouter(prefix="/api/v1", tags=["backlog"])
 
@@ -25,6 +25,7 @@ def crear_sprint(
 @router.post("/sprint/{sprint_id}/aprobar", response_model=SprintOut)
 def aprobar_sprint(
     sprint_id: int,
+    payload: SprintApprovalUpdate,
     db: Session = Depends(get_db),
     current_user=Depends(require_role("docente")),
 ):
@@ -32,6 +33,10 @@ def aprobar_sprint(
     sprint = repo.get_by_id(sprint_id)
     if not sprint:
         raise HTTPException(status_code=404, detail="Sprint no encontrado.")
+
+    if payload.feedback_docente is not None:
+        sprint.feedback_docente = payload.feedback_docente.strip() or None
+
     sprint.aprobado_por_docente = True
     return repo.update(sprint)
 
