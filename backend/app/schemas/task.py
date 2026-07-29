@@ -29,6 +29,10 @@ class SprintOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SprintApprovalUpdate(BaseModel):
+    feedback_docente: str | None = None
+
+
 class TaskCreate(BaseModel):
     sprint_id: int
     asignado_a: int | None = None

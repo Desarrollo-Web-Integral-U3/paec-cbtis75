@@ -77,6 +77,63 @@ def _crear_equipo_sprint_historia(db, user_id):
     return historia
 
 
+def test_docente_puede_aprobar_sprint_con_feedback(client, db_session):
+    docente = _crear_usuario(db_session, "60000001", "docente_aprueba@cbtis75.edu.mx", RolUsuario.DOCENTE)
+    team = Team(nombre_proyecto="Equipo Sprint", grupo="C")
+    db_session.add(team)
+    db_session.flush()
+    db_session.add(TeamMember(team_id=team.id, user_id=docente.id, rol_scrum="Scrum Master"))
+
+    sprint = Sprint(
+        team_id=team.id,
+        numero_parcial=2,
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=10),
+    )
+    db_session.add(sprint)
+    db_session.commit()
+    db_session.refresh(sprint)
+
+    token = _token_de(client, "docente_aprueba@cbtis75.edu.mx")
+    r = client.post(
+        f"/api/v1/sprint/{sprint.id}/aprobar",
+        json={"feedback_docente": "Buen avance, ajusten tiempos."},
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["aprobado_por_docente"] is True
+    assert body["feedback_docente"] == "Buen avance, ajusten tiempos."
+
+
+def test_estudiante_no_puede_aprobar_sprint(client, db_session):
+    estudiante = _crear_usuario(db_session, "60000002", "estudiante_aprueba@cbtis75.edu.mx", RolUsuario.ESTUDIANTE)
+    team = Team(nombre_proyecto="Equipo Estudiante", grupo="D")
+    db_session.add(team)
+    db_session.flush()
+    db_session.add(TeamMember(team_id=team.id, user_id=estudiante.id, rol_scrum="Dev FrontEnd"))
+
+    sprint = Sprint(
+        team_id=team.id,
+        numero_parcial=1,
+        fecha_inicio=datetime.utcnow(),
+        fecha_fin=datetime.utcnow() + timedelta(days=7),
+    )
+    db_session.add(sprint)
+    db_session.commit()
+    db_session.refresh(sprint)
+
+    token = _token_de(client, "estudiante_aprueba@cbtis75.edu.mx")
+    r = client.post(
+        f"/api/v1/sprint/{sprint.id}/aprobar",
+        json={"feedback_docente": "No debería poder aprobar."},
+        headers=_headers(token),
+    )
+
+    assert r.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # Tests PUT /api/v1/historia/{id}
 # ---------------------------------------------------------------------------
