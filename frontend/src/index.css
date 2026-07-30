@@ -305,6 +305,147 @@ body {
 }
 
 /* ============================
+   Dailies
+   ============================ */
+
+.daily-page {
+  padding: 2rem clamp(1rem, 4vw, 2rem);
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.daily-card {
+  background: var(--surface-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+}
+
+.daily-title {
+  margin-bottom: 0.5rem;
+}
+
+.daily-form textarea,
+.daily-filter-group select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.daily-form textarea:focus,
+.daily-filter-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.daily-history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.daily-history-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 0.4rem;
+}
+
+.daily-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.daily-filter-group {
+  min-width: 180px;
+}
+
+.daily-filter-group select {
+  min-height: 44px;
+}
+
+.daily-history-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 1rem 0;
+}
+
+.daily-history-item:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.daily-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.daily-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.daily-date {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.daily-history-body p {
+  margin-bottom: 0.55rem;
+  line-height: 1.6;
+}
+
+.daily-acuerdos {
+  margin-top: 0.7rem;
+  padding: 0.8rem 0.95rem;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.24);
+}
+
+.daily-empty {
+  color: var(--text-secondary);
+  padding: 1rem 0 0.25rem;
+}
+
+@media (max-width: 760px) {
+  .daily-history-header {
+    flex-direction: column;
+  }
+
+  .daily-filters {
+    width: 100%;
+  }
+
+  .daily-filter-group {
+    width: 100%;
+  }
+}
+
+/* ============================
    Design Sprint — tablero
    ============================ */
 
