@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     notification_provider: str = "console"  # "console" | "email" | "webhook"
     email_api_key: str | None = None
     email_api_url: str | None = None
+    # Remitente que aparecerá en el correo. Resend lo exige. Formato aceptado:
+    #   "Nombre <correo@dominio.com>"  o  "correo@dominio.com"
+    # Mientras no verifiques un dominio propio en Resend, usa el sandbox
+    # oficial "onboarding@resend.dev" — funciona sin verificación.
+    email_from: str = "PAEC <onboarding@resend.dev>"
 
     # --- Almacenamiento de archivos (Cloudinary) ---
     cloudinary_cloud_name: str = ""
