@@ -1,13 +1,14 @@
 from sqlalchemy.orm import Session
 
+from app.models.user import User
 from app.repositories.task_repository import TaskRepository
 
 
 class DashboardService:
     """
-    Calcula los datos que el FrontEnd graficará: histograma de story points,
+    Calcula los datos que el FrontEnd graficara: histograma de story points,
     esfuerzo por integrante, Gantt y puntos planeados vs. completados.
-    El backend SOLO entrega números/JSON; el renderizado de las gráficas
+    El backend SOLO entrega numeros/JSON; el renderizado de las graficas
     (Chart.js/Recharts/Gantt) se hace en React.
     """
 
@@ -23,12 +24,33 @@ class DashboardService:
             t.story_points for t in tasks if t.estado_kanban.value == "terminado"
         )
 
-        esfuerzo_por_integrante: dict[int, int] = {}
+        # Suma total de horas asignadas por integrante (por user_id).
+        # Solo se cuentan tareas con asignado_a definido.
+        horas_por_user_id: dict[int, int] = {}
         for t in tasks:
             if t.asignado_a:
-                esfuerzo_por_integrante[t.asignado_a] = (
-                    esfuerzo_por_integrante.get(t.asignado_a, 0) + t.tiempo_estimado_horas
+                horas_por_user_id[t.asignado_a] = (
+                    horas_por_user_id.get(t.asignado_a, 0) + t.tiempo_estimado_horas
                 )
+
+        # Resolver user_id -> nombre_completo con UNA sola query (in_())
+        # para evitar N+1 selects. El resultado es una lista de dicts para
+        # que el frontend pueda mapear directo a las barras del chart sin
+        # tener que hacer un join adicional contra otro endpoint.
+        esfuerzo_por_integrante: list[dict] = []
+        if horas_por_user_id:
+            usuarios = (
+                self.db.query(User)
+                .filter(User.id.in_(horas_por_user_id.keys()))
+                .all()
+            )
+            nombre_por_id = {u.id: u.nombre_completo for u in usuarios}
+            for user_id, horas in horas_por_user_id.items():
+                esfuerzo_por_integrante.append({
+                    "user_id": user_id,
+                    "nombre_completo": nombre_por_id.get(user_id, f"Usuario {user_id}"),
+                    "horas": horas,
+                })
 
         gantt = [
             {

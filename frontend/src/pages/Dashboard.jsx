@@ -18,9 +18,12 @@ export default function Dashboard({ teamId }) {
     { nombre: "Completados", valor: resumen.story_points_completados },
   ];
 
-  const dataEsfuerzo = Object.entries(resumen.esfuerzo_por_integrante).map(
-    ([userId, horas]) => ({ nombre: `Usuario ${userId}`, horas })
-  );
+  // El backend ahora devuelve [{user_id, nombre_completo, horas}] para
+  // que el eje X del chart muestre el nombre real en vez de "Usuario N".
+  const dataEsfuerzo = (resumen.esfuerzo_por_integrante || []).map((e) => ({
+    nombre: e.nombre_completo,
+    horas: e.horas,
+  }));
 
   return (
     <div>
