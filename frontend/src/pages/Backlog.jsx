@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../api/client";
+import { useAuthStore } from "../store/authStore";
 
 const FORM_VACIO = {
   sprint_id: "",
@@ -23,6 +24,10 @@ export default function Backlog({ teamId }) {
   const [error, setError] = useState("");
   const [editandoId, setEditandoId] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [feedbackDrafts, setFeedbackDrafts] = useState({});
+  const [aprobandoSprintId, setAprobandoSprintId] = useState(null);
+  const user = useAuthStore((state) => state.user);
+  const esDocente = user?.rol === "docente";
 
   const cargarDatos = async () => {
     try {
@@ -32,9 +37,14 @@ export default function Backlog({ teamId }) {
         api.get(`/api/v1/equipo/${teamId}/historias`),
       ]);
 
+      const sprintsData = sprintRes.data || [];
       setMiembros(equipoRes.data.members || []);
-      setSprints(sprintRes.data || []);
+      setSprints(sprintsData);
       setHistorias(historiasRes.data || []);
+      setFeedbackDrafts((prev) => ({
+        ...prev,
+        ...Object.fromEntries(sprintsData.map((sprint) => [sprint.id, prev[sprint.id] ?? sprint.feedback_docente ?? ""])),
+      }));
 
       if (!form.sprint_id && (sprintRes.data || []).length > 0) {
         setForm((prev) => ({ ...prev, sprint_id: String(sprintRes.data[0].id) }));
@@ -151,6 +161,23 @@ export default function Backlog({ teamId }) {
     setModalAbierto(true);
   };
 
+  const aprobarSprint = async (sprint) => {
+    setError("");
+    setAprobandoSprintId(sprint.id);
+
+    try {
+      await api.post(`/api/v1/sprint/${sprint.id}/aprobar`, {
+        feedback_docente: feedbackDrafts[sprint.id] ?? "",
+      });
+      await cargarDatos();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "No se pudo aprobar el sprint.");
+    } finally {
+      setAprobandoSprintId(null);
+    }
+  };
+
   return (
     <div className="bl-page">
       <header className="bl-header">
@@ -166,6 +193,70 @@ export default function Backlog({ teamId }) {
       </header>
 
       {error && <div className="error-message">{error}</div>}
+
+      <section className="bl-review-section">
+        <div className="bl-section-header">
+          <span className="bl-section-title">Revisión de sprints parciales</span>
+          <span className="bl-count">{sprints.length}</span>
+        </div>
+
+        {sprints.length === 0 ? (
+          <div className="bl-empty">Aún no hay sprints creados para este equipo.</div>
+        ) : (
+          <div className="bl-review-list">
+            {sprints.map((sprint) => (
+              <article
+                key={sprint.id}
+                className={`bl-review-card ${sprint.aprobado_por_docente ? "bl-review-card--approved" : ""}`}
+              >
+                <div className="bl-review-top">
+                  <div>
+                    <h3 className="bl-review-title">Sprint #{sprint.numero_parcial}</h3>
+                    <p className="bl-review-meta">
+                      {new Date(sprint.fecha_inicio).toLocaleDateString()} - {new Date(sprint.fecha_fin).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <span className={`bl-status-pill ${sprint.aprobado_por_docente ? "bl-status-pill--approved" : "bl-status-pill--pending"}`}>
+                    {sprint.aprobado_por_docente ? "Aprobado" : "Pendiente"}
+                  </span>
+                </div>
+
+                {esDocente ? (
+                  <>
+                    <label className="bl-review-label">Retroalimentación del docente</label>
+                    <textarea
+                      rows={3}
+                      value={feedbackDrafts[sprint.id] ?? ""}
+                      onChange={(e) =>
+                        setFeedbackDrafts((prev) => ({ ...prev, [sprint.id]: e.target.value }))
+                      }
+                      placeholder="Escribe la retroalimentación para este sprint..."
+                      className="bl-review-textarea"
+                    />
+                    <div className="bl-review-actions">
+                      <button
+                        type="button"
+                        className="bl-btn-primary"
+                        onClick={() => aprobarSprint(sprint)}
+                        disabled={aprobandoSprintId === sprint.id}
+                      >
+                        {aprobandoSprintId === sprint.id ? "Guardando..." : sprint.aprobado_por_docente ? "Actualizar aprobación" : "Aprobar sprint"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="bl-review-feedback">
+                      <strong>Retroalimentación:</strong> {sprint.feedback_docente || "Sin retroalimentación aún."}
+                    </p>
+                    <p className="bl-review-hint">Solo el docente puede aprobar este sprint.</p>
+                  </>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section>
         <div className="bl-section-header">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/client";
 import { useAuthStore } from "../store/authStore";
 
@@ -32,24 +32,48 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Iniciar sesión — PAEC</h1>
-      <input
-        type="email"
-        placeholder="Correo institucional"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Contraseña"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      {error && <p role="alert">{error}</p>}
-      <button type="submit">Entrar</button>
-    </form>
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1>Iniciar sesión — PAEC</h1>
+          <p>Accede a tu cuenta para gestionar tus proyectos</p>
+        </div>
+        <form onSubmit={handleSubmit} className="auth-form" noValidate>
+          {error && (
+            <div className="error-message" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>{error}</span>
+            </div>
+          )}
+          <div className="form-group">
+            <label htmlFor="email">Correo institucional</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="correo@cbtis75.edu.mx"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="btn-primary">Entrar</button>
+        </form>
+        <div className="auth-footer">
+          <p>¿No tienes cuenta? <Link to="/register">Regístrate</Link></p>
+        </div>
+      </div>
+    </div>
   );
+
 }
