@@ -10,6 +10,7 @@ import Backlog from "../pages/Backlog";
 import RoleGuard from "../components/RoleGuard";
 import Intro from "../pages/Intro";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
+import Perfil from "../pages/Perfil";
 
 export default function AppRoutes() {
   return (
@@ -31,6 +32,7 @@ export default function AppRoutes() {
           </RoleGuard>
         }
       />
+      <Route path="/perfil" element={<Perfil />} />
     </Routes>
   );
 }
