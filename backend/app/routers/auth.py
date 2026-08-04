@@ -1,14 +1,15 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import require_role
+from app.core.dependencies import get_current_user, require_role
 from app.core.security import hash_password, verify_password, create_access_token
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserCreatePublic, UserOut, UserLogin, Token
+from app.services.user_arco_service import anonimizar_usuario
 from app.models.user import User, RolUsuario
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -127,3 +128,38 @@ def token(
         {"sub": str(user.id), "rol": user.rol.value},
     )
     return Token(access_token=access_token)
+
+
+@router.get("/me", response_model=UserOut)
+def obtener_mi_perfil(current_user: User = Depends(get_current_user)):
+    """
+    Devuelve el perfil del usuario autenticado.
+
+    Requerido por el frontend para renderizar la pantalla de perfil
+    (mostrar a quién se está por eliminar antes de confirmar el DELETE).
+    """
+    return current_user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+def eliminar_mi_cuenta(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Ejerce el derecho ARCO de Cancelación (LFPDPPP).
+
+    - Anonimiza IN-PLACE los campos PII del usuario (nombre, email,
+      numero_control, password_hash) — la fila NO se elimina.
+    - Estampa `fecha_anonimizacion` para invalidar cualquier JWT viejo
+      (ver core/dependencies.get_current_user).
+    - Preserva la integridad referencial: tasks, dailies y team_members
+      siguen apuntando al mismo user_id (ahora anónimo).
+
+    Idempotente: si la cuenta ya está anonimizada, `get_current_user`
+    devuelve 401 antes de llegar aquí — nunca se ejecuta dos veces.
+
+    Responde 204 No Content (sin body).
+    """
+    anonimizar_usuario(db, current_user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -29,4 +29,12 @@ class User(Base):
     consentimiento_privacidad = Column(Boolean, nullable=False, default=False)
     fecha_consentimiento = Column(DateTime, nullable=True)
 
+    # Marca del ejercicio del derecho ARCO de Cancelación (LFPDPPP).
+    # NULL = cuenta activa; con valor = anonimizada.
+    # Cuando tiene valor, los campos PII (nombre_completo, email,
+    # numero_control, password_hash) fueron reescritos a placeholders
+    # y el usuario NO puede volver a autenticarse. La fila se conserva
+    # para no romper FKs históricos (tasks, dailies, team_members).
+    fecha_anonimizacion = Column(DateTime, nullable=True)
+
     memberships = relationship("TeamMember", back_populates="user")
