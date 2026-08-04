@@ -9,11 +9,13 @@ import Dashboard from "../pages/Dashboard";
 import Backlog from "../pages/Backlog";
 import RoleGuard from "../components/RoleGuard";
 import Intro from "../pages/Intro";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Intro />} />
+      <Route path="/aviso-de-privacidad" element={<PrivacyPolicy />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/equipo" element={<TeamSetup />} />
