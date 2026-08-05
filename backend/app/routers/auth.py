@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_role
+from app.core.rate_limit import limiter
 from app.core.security import hash_password, verify_password, create_access_token
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserCreatePublic, UserOut, UserLogin, Token
@@ -84,16 +85,19 @@ def register_docente(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")  # OWASP A07: mitigacion de fuerza bruta — max 5 intentos/min por IP
 def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
-    # NOTA: además del rate limit global de slowapi (100/min, en main.py),
-    # para login se recomienda un límite más estricto, p.ej. decorar con
-    # @limiter.limit("5/minute") para mitigar fuerza bruta (OWASP).
+    """
+    Autenticacion de usuario.
+    Rate limit: 5 intentos por minuto por IP de origen.
+    Al superar el limite el cliente recibe HTTP 429 Too Many Requests.
+    """
     repo = UserRepository(db)
     user = repo.get_by_email(payload.email)
 
-    # Mensaje genérico: no revelar si fue el usuario o la contraseña
-    # (evita enumeración de usuarios - buena práctica OWASP)
-    credenciales_invalidas = HTTPException(status_code=401, detail="Credenciales inválidas.")
+    # Mensaje generico: no revelar si fue el usuario o la contrasena
+    # (evita enumeracion de usuarios - buena practica OWASP)
+    credenciales_invalidas = HTTPException(status_code=401, detail="Credenciales invalidas.")
 
     if not user or not verify_password(payload.password, user.password_hash):
         raise credenciales_invalidas
