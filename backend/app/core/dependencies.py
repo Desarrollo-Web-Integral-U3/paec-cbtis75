@@ -39,6 +39,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = user_repo.get_by_id(int(payload["sub"]))
     if user is None:
         raise credentials_exception
+
+    # Si el usuario ejerció su derecho ARCO de Cancelación, sus datos ya
+    # fueron anonimizados y su sesión debe considerarse revocada. Este
+    # check invalida todos los JWTs previamente emitidos SIN necesidad de
+    # una blacklist externa (Redis/DB): el estado vive en la BD del user.
+    if user.fecha_anonimizacion is not None:
+        raise credentials_exception
+
     return user
 
 
