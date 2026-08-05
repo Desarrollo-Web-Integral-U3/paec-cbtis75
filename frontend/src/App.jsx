@@ -11,6 +11,7 @@ export default function App() {
         <a href="/kanban">Kanban</a>
         <a href="/dailies">Dailies</a>
         <a href="/dashboard">Dashboard</a>
+        <a href="/perfil">Mi perfil</a>
       </nav>
       <main style={{ padding: "1rem" }}>
         <AppRoutes />
