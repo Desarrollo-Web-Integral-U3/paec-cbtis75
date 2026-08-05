@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 import api from "../api/client";
+import CapacidadChart from "../components/dashboard/CapacidadChart";
 import GanttChart from "../components/dashboard/GanttChart";
 
 export default function Dashboard({ teamId }) {
@@ -48,6 +49,9 @@ export default function Dashboard({ teamId }) {
           <Bar dataKey="horas" fill="#0ea5e9" />
         </BarChart>
       </ResponsiveContainer>
+
+      <h3>Capacidad vs esfuerzo asignado</h3>
+      <CapacidadChart teamId={teamId} />
 
       <h3>Cronograma (Gantt)</h3>
       <GanttChart rows={resumen.gantt} />
