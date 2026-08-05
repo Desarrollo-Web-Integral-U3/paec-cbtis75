@@ -6,6 +6,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.core.rate_limit import limiter
+from app.middleware.audit_log import AuditLogMiddleware
 from app.routers import (
     auth,
     teams,
@@ -32,6 +33,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["*"],
 )
+
+# --- Auditoria: registra metodo, ruta, user_id y timestamp por cada request ---
+# GARANTIA: nunca lee el body ni registra contraseñas u otros datos sensibles.
+app.add_middleware(AuditLogMiddleware)
 
 # En desarrollo: crea las tablas automáticamente.
 # En producción: usar Alembic (alembic upgrade head) y NO Base.metadata.create_all.
