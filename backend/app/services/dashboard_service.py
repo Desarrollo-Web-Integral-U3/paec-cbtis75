@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.models.team import Team
 from app.models.user import User
 from app.repositories.task_repository import TaskRepository
 
@@ -70,3 +71,41 @@ class DashboardService:
             "gantt": gantt,
             "total_tareas": len(tasks),
         }
+
+    def resumen_general(self) -> list[dict]:
+        """
+        Devuelve el resumen de avance de TODOS los equipos del curso.
+        Usado por GET /api/v1/dashboard/general (solo docente).
+
+        Por cada equipo incluye:
+        - story_points_planeados: suma de story_points de todas sus tareas.
+        - story_points_completados: suma de story_points de tareas en estado 'terminado'.
+        - porcentaje_avance: (completados / planeados) * 100, o 0.0 si no hay tareas.
+        - total_tareas: numero de historias registradas.
+
+        Carga todos los equipos en una sola query y reutiliza list_by_team()
+        para el calculo de cada equipo.
+        """
+        equipos = self.db.query(Team).order_by(Team.id.asc()).all()
+        resultado = []
+
+        for equipo in equipos:
+            tasks = self.task_repo.list_by_team(equipo.id)
+
+            planeados = sum(t.story_points for t in tasks)
+            completados = sum(
+                t.story_points for t in tasks if t.estado_kanban.value == "terminado"
+            )
+            porcentaje = round((completados / planeados) * 100, 1) if planeados > 0 else 0.0
+
+            resultado.append({
+                "team_id": equipo.id,
+                "nombre_proyecto": equipo.nombre_proyecto,
+                "grupo": equipo.grupo,
+                "total_tareas": len(tasks),
+                "story_points_planeados": planeados,
+                "story_points_completados": completados,
+                "porcentaje_avance": porcentaje,
+            })
+
+        return resultado

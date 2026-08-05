@@ -118,3 +118,22 @@ class CapacidadOut(BaseModel):
     horas_restantes: int   # horas_disponibles - horas_asignadas (puede ser negativo si hay sobrecarga)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ResumenEquipoOut(BaseModel):
+    """
+    Resumen de avance de un equipo para el dashboard general del docente.
+    Incluye story points planeados vs. completados para que el docente
+    pueda comparar el progreso de todos los equipos del curso en una vista.
+    """
+    team_id: int
+    nombre_proyecto: str
+    grupo: str | None
+    total_tareas: int
+    story_points_planeados: int
+    story_points_completados: int
+    # Porcentaje de avance: 0-100. Se calcula en el servicio para evitar
+    # division por cero en el frontend cuando planeados == 0.
+    porcentaje_avance: float
+
+    model_config = ConfigDict(from_attributes=True)
