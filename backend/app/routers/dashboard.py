@@ -6,6 +6,7 @@ from app.core.dependencies import require_role
 from app.services.alert_service import AlertService
 from app.services.dashboard_service import DashboardService
 from app.schemas.alert import AlertOut
+from app.schemas.team import ResumenEquipoOut
 
 router = APIRouter(prefix="/api/v1", tags=["dashboard"])
 
@@ -32,3 +33,21 @@ def evaluar_alertas(
     beat una vez al día, no el usuario manualmente.
     """
     return AlertService(db).evaluar_equipo(team_id)
+
+
+@router.get("/dashboard/general", response_model=list[ResumenEquipoOut])
+def dashboard_general(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role("docente")),
+):
+    """
+    Dashboard agregado de todos los equipos del curso.
+    Acceso restringido a rol docente.
+
+    Devuelve un arreglo con el resumen de avance de cada equipo:
+    - story_points_planeados: total de story points de todas sus historias.
+    - story_points_completados: story points de historias en estado 'terminado'.
+    - porcentaje_avance: completados / planeados * 100 (0.0 si no hay tareas).
+    - total_tareas: numero de historias registradas en el equipo.
+    """
+    return DashboardService(db).resumen_general()
