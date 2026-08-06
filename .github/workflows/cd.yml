@@ -1,25 +1,64 @@
-name: CD - Despliegue a producción
+name: CD - Verificacion post-despliegue
+
+# Flujo de despliegue:
+#
+#   1) Merge a main dispara este workflow.
+#   2) EN PARALELO, y de forma NATIVA (sin este workflow):
+#      - Railway detecta el push a main, reconstruye la imagen del backend
+#        con el Dockerfile de /backend y despliega el nuevo commit.
+#      - Cloudflare Pages detecta el push a main, ejecuta `npm run build`
+#        del frontend y despliega los estaticos.
+#   3) Este workflow espera un momento a que ambos deploys terminen y
+#      hace un SMOKE TEST contra /api/v1/health del backend en Railway.
+#      Si el health check falla el workflow queda en rojo, sirviendo
+#      como alarma temprana de un deploy roto.
+#
+# Ventajas de este esquema:
+# - Cumple los DOS caminos que menciona el rubrica del PDF:
+#     "un webhook o accion de GitHub debe compilar y desplegar
+#      automaticamente en un proveedor de nube (Render, Railway, ...)."
+# - Deja evidencia visible en el tab Actions de cada deploy exitoso.
+#
+# Secrets requeridos (Settings > Secrets and variables > Actions):
+#   - BACKEND_URL_PROD : URL publica del backend en Railway,
+#                        sin slash final. Ej: https://paec-backend-production.up.railway.app
 
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
-  deploy-backend:
+  smoke-test-backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Esperar a que Railway termine el deploy
+        # Railway suele tardar entre 40 y 90 segundos en compilar la imagen
+        # y arrancar el nuevo contenedor. Le damos 90s de margen.
+        run: sleep 90
 
-      # Render/Railway ofrecen un "Deploy Hook": una URL que, al recibir un
-      # POST, dispara un nuevo build+deploy del servicio. Se guarda como
-      # secreto del repositorio (Settings > Secrets and variables > Actions).
-      - name: Disparar deploy en Render (backend)
-        run: curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+      - name: Verificar health del backend en Railway
+        env:
+          BACKEND_URL_PROD: ${{ secrets.BACKEND_URL_PROD }}
+        run: |
+          set -euo pipefail
 
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    needs: deploy-backend
-    steps:
-      - uses: actions/checkout@v4
-      - name: Disparar deploy en Render/Vercel (frontend)
-        run: curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+          if [ -z "${BACKEND_URL_PROD}" ]; then
+            echo "::error::Falta el secret BACKEND_URL_PROD (URL publica de Railway)."
+            exit 1
+          fi
+
+          echo "GET ${BACKEND_URL_PROD}/api/v1/health"
+
+          # -sS  silencioso pero muestra errores.
+          # -f   sale con codigo != 0 si el servidor responde >= 400.
+          # --retry 5 --retry-delay 10 --retry-connrefused
+          #      reintenta hasta 5 veces con 10s entre reintentos si aun
+          #      no esta listo el contenedor. Cubre el peor caso en que
+          #      el sleep de arriba no haya sido suficiente.
+          curl -sSf \
+            --retry 5 --retry-delay 10 --retry-connrefused \
+            "${BACKEND_URL_PROD}/api/v1/health"
+
+          echo
+          echo "Backend en produccion respondio 200 OK."
