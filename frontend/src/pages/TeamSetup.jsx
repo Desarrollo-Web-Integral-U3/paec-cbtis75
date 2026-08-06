@@ -6,26 +6,16 @@ import PrivacyNotice from "../components/PrivacyNotice";
  * Modulo de Inicio y Gestion de Equipos (issue #12).
  *
  * Permite al usuario autenticado registrar su equipo (2-4 integrantes) y
- * asignar el rol Scrum de cada uno. Al enviar el formulario:
- *   1. Se hace POST /api/v1/equipo/ con emails + roles.
- *   2. Si el backend responde 201, se reconsulta GET /api/v1/equipo/{id}
- *      para confirmar visualmente que el equipo quedo registrado con sus
- *      integrantes y roles (criterio de aceptacion del issue).
- *   3. Si el backend responde 422, se muestra el mensaje concreto (por
- *      ejemplo emails no encontrados, faltan reglas Scrum, etc).
- *
- * Cumple LGPDPPSO: el aviso de privacidad se muestra antes de capturar
- * datos y el checkbox de consentimiento NO viene premarcado.
+ * asignar el rol Scrum de cada uno.
  */
 
 const ROLES_SCRUM = ["Scrum Master", "Product Owner", "Developer"];
-
 const MIEMBRO_VACIO = { email: "", rol_scrum: "" };
 
 function IntroABPScrum() {
   return (
-    <section style={{ marginBottom: "1.5rem" }}>
-      <h2>Que es ABP + Scrum?</h2>
+    <section className="pf-arco-text" style={{ marginBottom: "1rem" }}>
+      <strong>Que es ABP + Scrum?</strong>
       <p>
         El Aprendizaje Basado en Proyectos (ABP) es una metodologia donde
         aprenden resolviendo un problema real mediante un proyecto concreto.
@@ -42,14 +32,16 @@ export default function TeamSetup() {
   const [nombreProyecto, setNombreProyecto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [grupo, setGrupo] = useState("");
-  const [miembros, setMiembros] = useState([{ ...MIEMBRO_VACIO }, { ...MIEMBRO_VACIO }]);
+  const [miembros, setMiembros] = useState([
+    { ...MIEMBRO_VACIO },
+    { ...MIEMBRO_VACIO },
+  ]);
   const [aceptaAviso, setAceptaAviso] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorGeneral, setErrorGeneral] = useState("");
   const [emailsFaltantes, setEmailsFaltantes] = useState([]);
   const [equipoCreado, setEquipoCreado] = useState(null);
 
-  // ---- Contadores en vivo para dar feedback visual --------------------
   const conteoRoles = useMemo(() => {
     return miembros.reduce(
       (acc, m) => {
@@ -76,12 +68,16 @@ export default function TeamSetup() {
 
   const validacionCliente = useMemo(() => {
     const errores = [];
-    if (miembros.length < 2) errores.push("El equipo debe tener al menos 2 integrantes.");
-    if (miembros.length > 4) errores.push("El equipo no puede tener mas de 4 integrantes.");
-    if (conteoRoles.sm === 0) errores.push("Falta asignar el rol de Scrum Master.");
+    if (miembros.length < 2)
+      errores.push("El equipo debe tener al menos 2 integrantes.");
+    if (miembros.length > 4)
+      errores.push("El equipo no puede tener mas de 4 integrantes.");
+    if (conteoRoles.sm === 0)
+      errores.push("Falta asignar el rol de Scrum Master.");
     if (conteoRoles.sm > 1) errores.push("Solo puede haber un Scrum Master.");
     if (conteoRoles.po > 1) errores.push("Solo puede haber un Product Owner.");
-    if (emailsDuplicados.size > 0) errores.push("Hay correos repetidos entre los integrantes.");
+    if (emailsDuplicados.size > 0)
+      errores.push("Hay correos repetidos entre los integrantes.");
     return errores;
   }, [miembros, conteoRoles, emailsDuplicados]);
 
@@ -95,7 +91,6 @@ export default function TeamSetup() {
     return true;
   }, [validacionCliente, nombreProyecto, aceptaAviso, miembros]);
 
-  // ---- Handlers del formulario ---------------------------------------
   const actualizarMiembro = (i, campo, valor) => {
     setMiembros((prev) => {
       const copia = [...prev];
@@ -135,59 +130,71 @@ export default function TeamSetup() {
     setEnviando(true);
     try {
       const { data: creado } = await api.post("/api/v1/equipo/", payload);
-      // Reconsulta al GET para confirmar (criterio de aceptacion del issue).
-      const { data: confirmado } = await api.get(`/api/v1/equipo/${creado.id}`);
+      const { data: confirmado } = await api.get(
+        `/api/v1/equipo/${creado.id}`
+      );
       setEquipoCreado(confirmado);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      if (detail && typeof detail === "object" && Array.isArray(detail.emails_no_encontrados)) {
+      if (
+        detail &&
+        typeof detail === "object" &&
+        Array.isArray(detail.emails_no_encontrados)
+      ) {
         setEmailsFaltantes(detail.emails_no_encontrados);
         setErrorGeneral(
-          detail.mensaje || "Hay correos que no corresponden a usuarios registrados."
+          detail.mensaje ||
+            "Hay correos que no corresponden a usuarios registrados."
         );
       } else if (typeof detail === "string") {
         setErrorGeneral(detail);
       } else if (Array.isArray(detail)) {
         setErrorGeneral(detail[0]?.msg || "Datos invalidos. Revisa los campos.");
       } else {
-        setErrorGeneral("Ocurrio un error al registrar el equipo. Intenta nuevamente.");
+        setErrorGeneral(
+          "Ocurrio un error al registrar el equipo. Intenta nuevamente."
+        );
       }
     } finally {
       setEnviando(false);
     }
   };
 
-  // ---- Vista de exito -------------------------------------------------
   if (equipoCreado) {
     return (
-      <div style={{ maxWidth: 720, margin: "2rem auto", padding: "1rem" }}>
-        <h2>Equipo registrado correctamente</h2>
-        <div
-          style={{
-            border: "1px solid #ccc",
-            borderRadius: 8,
-            padding: "1rem",
-            marginTop: "1rem",
-          }}
-        >
+      <div className="ts-page">
+        <header className="ts-header">
+          <h1 className="ts-title">Equipo registrado</h1>
+          <p className="ts-subtitle">
+            Tu equipo quedo correctamente registrado en la base de datos.
+          </p>
+        </header>
+
+        <section className="ts-success-card">
+          <div className="ts-success-title">Registro exitoso</div>
           <p><strong>Proyecto:</strong> {equipoCreado.nombre_proyecto}</p>
-          {equipoCreado.grupo && <p><strong>Grupo:</strong> {equipoCreado.grupo}</p>}
-          {equipoCreado.descripcion_proyecto && (
-            <p>
-              <strong>Descripcion:</strong> {equipoCreado.descripcion_proyecto}
-            </p>
+          {equipoCreado.grupo && (
+            <p><strong>Grupo:</strong> {equipoCreado.grupo}</p>
           )}
-          <h3>Integrantes</h3>
-          <ul>
+          {equipoCreado.descripcion_proyecto && (
+            <p><strong>Descripcion:</strong> {equipoCreado.descripcion_proyecto}</p>
+          )}
+          <h3 className="section-title" style={{ marginTop: "1rem" }}>
+            Integrantes
+          </h3>
+          <ul className="ts-member-list">
             {equipoCreado.members.map((m) => (
               <li key={m.user_id}>
-                <strong>{m.nombre_completo}</strong> ({m.email}) &mdash; {m.rol_scrum}
+                <strong>{m.nombre_completo}</strong> ({m.email}) &mdash;{" "}
+                {m.rol_scrum}
               </li>
             ))}
           </ul>
-        </div>
+        </section>
+
         <button
           type="button"
+          className="btn-secondary"
           onClick={() => {
             setEquipoCreado(null);
             setNombreProyecto("");
@@ -196,7 +203,6 @@ export default function TeamSetup() {
             setMiembros([{ ...MIEMBRO_VACIO }, { ...MIEMBRO_VACIO }]);
             setAceptaAviso(false);
           }}
-          style={{ marginTop: "1rem" }}
         >
           Registrar otro equipo
         </button>
@@ -204,172 +210,202 @@ export default function TeamSetup() {
     );
   }
 
-  // ---- Formulario -----------------------------------------------------
   return (
-    <div style={{ maxWidth: 720, margin: "2rem auto", padding: "1rem" }}>
-      <IntroABPScrum />
-
-      <form onSubmit={handleSubmit} noValidate>
-        <h2>Registrar equipo y proyecto</h2>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <PrivacyNotice onAccept={setAceptaAviso} />
-        </div>
-
-        <label style={{ display: "block", marginBottom: "0.5rem" }}>
-          Nombre del proyecto <span aria-hidden="true">*</span>
-          <input
-            type="text"
-            value={nombreProyecto}
-            onChange={(e) => setNombreProyecto(e.target.value)}
-            required
-            minLength={3}
-            maxLength={150}
-            placeholder="Nombre del proyecto ABP"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
-          />
-        </label>
-
-        <label style={{ display: "block", marginBottom: "0.5rem" }}>
-          Descripcion (opcional)
-          <textarea
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            maxLength={500}
-            rows={3}
-            placeholder="Que problema resuelve el proyecto"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
-          />
-        </label>
-
-        <label style={{ display: "block", marginBottom: "1rem" }}>
-          Grupo (opcional)
-          <input
-            type="text"
-            value={grupo}
-            onChange={(e) => setGrupo(e.target.value)}
-            maxLength={30}
-            placeholder="p.ej. 6IDS-A"
-            style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
-          />
-        </label>
-
-        <h3>Integrantes ({miembros.length}/4)</h3>
-        <p style={{ fontSize: "0.85rem", color: "#555" }}>
-          Reglas: entre 2 y 4 integrantes. Exactamente 1 Scrum Master. Maximo 1
-          Product Owner. El resto Developers. Cada correo debe pertenecer a un
-          usuario ya registrado.
+    <div className="ts-page">
+      <header className="ts-header">
+        <h1 className="ts-title">Registrar equipo y proyecto</h1>
+        <p className="ts-subtitle">
+          Alta del equipo de trabajo (2-4 integrantes) con sus roles Scrum.
+          Cada correo debe corresponder a un usuario ya registrado.
         </p>
+      </header>
 
-        {miembros.map((m, i) => {
-          const emailNormalizado = m.email.trim().toLowerCase();
-          const esDuplicado = emailNormalizado && emailsDuplicados.has(emailNormalizado);
-          const esFaltante =
-            emailNormalizado &&
-            emailsFaltantes.map((e) => e.toLowerCase()).includes(emailNormalizado);
-          return (
-            <div
-              key={i}
+      <div className="ts-card">
+        <IntroABPScrum />
+
+        <form className="ts-form" onSubmit={handleSubmit} noValidate>
+          <div style={{ marginBottom: "0.5rem" }}>
+            <PrivacyNotice onAccept={setAceptaAviso} />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="nombre-proyecto">
+              Nombre del proyecto <span aria-hidden="true">*</span>
+            </label>
+            <input
+              id="nombre-proyecto"
+              type="text"
+              value={nombreProyecto}
+              onChange={(e) => setNombreProyecto(e.target.value)}
+              required
+              minLength={3}
+              maxLength={150}
+              placeholder="Nombre del proyecto ABP"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="descripcion">Descripcion (opcional)</label>
+            <textarea
+              id="descripcion"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Que problema resuelve el proyecto"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="grupo">Grupo (opcional)</label>
+            <input
+              id="grupo"
+              type="text"
+              value={grupo}
+              onChange={(e) => setGrupo(e.target.value)}
+              maxLength={30}
+              placeholder="p.ej. 6IDS-A"
+            />
+          </div>
+
+          <div>
+            <h3 className="section-title">
+              Integrantes ({miembros.length}/4)
+            </h3>
+            <p
               style={{
-                display: "flex",
-                gap: "0.5rem",
-                alignItems: "flex-start",
-                marginBottom: "0.5rem",
-                padding: "0.5rem",
-                border: esDuplicado || esFaltante ? "1px solid #c00" : "1px solid #ddd",
-                borderRadius: 6,
+                fontSize: "0.85rem",
+                color: "var(--text-secondary)",
+                marginBottom: "0.85rem",
               }}
             >
-              <div style={{ flex: 2 }}>
-                <input
-                  type="email"
-                  value={m.email}
-                  onChange={(e) => actualizarMiembro(i, "email", e.target.value)}
-                  placeholder={`Correo integrante ${i + 1}`}
-                  required
-                  style={{ width: "100%", padding: "0.5rem" }}
-                />
-                {esDuplicado && (
-                  <span style={{ color: "#c00", fontSize: "0.8rem" }}>
-                    Este correo ya esta en el equipo.
-                  </span>
-                )}
-                {esFaltante && (
-                  <span style={{ color: "#c00", fontSize: "0.8rem" }}>
-                    Este correo no esta registrado en el sistema.
-                  </span>
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <select
-                  value={m.rol_scrum}
-                  onChange={(e) => actualizarMiembro(i, "rol_scrum", e.target.value)}
-                  required
-                  style={{ width: "100%", padding: "0.5rem" }}
+              Reglas: entre 2 y 4 integrantes. Exactamente 1 Scrum Master.
+              Maximo 1 Product Owner. El resto Developers.
+            </p>
+
+            {miembros.map((m, i) => {
+              const emailNormalizado = m.email.trim().toLowerCase();
+              const esDuplicado =
+                emailNormalizado && emailsDuplicados.has(emailNormalizado);
+              const esFaltante =
+                emailNormalizado &&
+                emailsFaltantes
+                  .map((e) => e.toLowerCase())
+                  .includes(emailNormalizado);
+              const tieneError = esDuplicado || esFaltante;
+              return (
+                <div
+                  key={i}
+                  className={
+                    tieneError ? "ts-row ts-row--error" : "ts-row"
+                  }
+                  style={{ marginBottom: "0.5rem" }}
                 >
-                  <option value="">-- Rol Scrum --</option>
-                  {ROLES_SCRUM.map((rol) => (
-                    <option key={rol} value={rol}>
-                      {rol}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => eliminarMiembro(i)}
-                disabled={miembros.length <= 2}
-                title={miembros.length <= 2 ? "Debe haber al menos 2 integrantes" : "Eliminar"}
-                aria-label={`Eliminar integrante ${i + 1}`}
-              >
-                Eliminar
-              </button>
-            </div>
-          );
-        })}
+                  <div>
+                    <input
+                      type="email"
+                      value={m.email}
+                      onChange={(e) =>
+                        actualizarMiembro(i, "email", e.target.value)
+                      }
+                      placeholder={`Correo integrante ${i + 1}`}
+                      required
+                      style={{
+                        width: "100%",
+                        background: "rgba(15, 23, 42, 0.6)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "8px",
+                        padding: "0.65rem 0.85rem",
+                        color: "var(--text-primary)",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                    {esDuplicado && (
+                      <span className="ts-row-error-msg">
+                        Este correo ya esta en el equipo.
+                      </span>
+                    )}
+                    {esFaltante && (
+                      <span className="ts-row-error-msg">
+                        Este correo no esta registrado en el sistema.
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    value={m.rol_scrum}
+                    onChange={(e) =>
+                      actualizarMiembro(i, "rol_scrum", e.target.value)
+                    }
+                    required
+                    style={{
+                      background: "rgba(15, 23, 42, 0.6)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "8px",
+                      padding: "0.65rem 0.85rem",
+                      color: "var(--text-primary)",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <option value="">-- Rol Scrum --</option>
+                    {ROLES_SCRUM.map((rol) => (
+                      <option key={rol} value={rol}>
+                        {rol}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => eliminarMiembro(i)}
+                    disabled={miembros.length <= 2}
+                    aria-label={`Eliminar integrante ${i + 1}`}
+                  >
+                    Quitar
+                  </button>
+                </div>
+              );
+            })}
 
-        <button
-          type="button"
-          onClick={agregarMiembro}
-          disabled={miembros.length >= 4}
-          style={{ marginBottom: "1rem" }}
-        >
-          + Agregar integrante
-        </button>
-
-        <div
-          style={{
-            fontSize: "0.85rem",
-            color: "#555",
-            marginBottom: "1rem",
-          }}
-        >
-          <strong>Roles asignados:</strong> Scrum Master: {conteoRoles.sm} &middot;
-          Product Owner: {conteoRoles.po} &middot; Developer: {conteoRoles.dev}
-        </div>
-
-        {validacionCliente.length > 0 && (
-          <ul style={{ color: "#c00", marginBottom: "1rem" }}>
-            {validacionCliente.map((msg) => (
-              <li key={msg}>{msg}</li>
-            ))}
-          </ul>
-        )}
-
-        {errorGeneral && (
-          <div role="alert" style={{ color: "#c00", marginBottom: "1rem" }}>
-            {errorGeneral}
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={agregarMiembro}
+              disabled={miembros.length >= 4}
+              style={{ marginTop: "0.5rem" }}
+            >
+              + Agregar integrante
+            </button>
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={!formularioValido || enviando}
-          style={{ padding: "0.75rem 1.5rem" }}
-        >
-          {enviando ? "Registrando..." : "Guardar equipo"}
-        </button>
-      </form>
+          <div className="ts-role-count">
+            <strong>Roles asignados:</strong> Scrum Master: {conteoRoles.sm}{" "}
+            &middot; Product Owner: {conteoRoles.po} &middot; Developer:{" "}
+            {conteoRoles.dev}
+          </div>
+
+          {validacionCliente.length > 0 && (
+            <ul className="ts-error-list">
+              {validacionCliente.map((msg) => (
+                <li key={msg}>{msg}</li>
+              ))}
+            </ul>
+          )}
+
+          {errorGeneral && (
+            <div role="alert" className="error-message">
+              <span>{errorGeneral}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={!formularioValido || enviando}
+          >
+            {enviando ? "Registrando..." : "Guardar equipo"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
