@@ -1,0 +1,17 @@
+# Cabeceras HTTP de seguridad para todas las rutas del frontend.
+#
+# Cloudflare Workers/Pages lee este archivo automáticamente al servir los
+# assets estáticos. Se aplica a cada respuesta del sitio.
+#
+# Vite copia todo lo que hay en /public a /dist en el build, por eso este
+# archivo tiene que vivir aquí (no en dist/ directo, que se regenera).
+#
+# Referencia:
+# https://developers.cloudflare.com/workers/static-assets/headers/
+
+/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
