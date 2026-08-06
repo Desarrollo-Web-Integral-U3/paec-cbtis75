@@ -13,8 +13,9 @@ name: Alertas - evaluacion diaria
 #
 # Secrets requeridos en el repositorio
 # (Settings > Secrets and variables > Actions > New repository secret):
-#   - BACKEND_URL   : URL publica del backend en Render, sin slash final.
-#                     Ejemplo: https://paec-backend.onrender.com
+#   - BACKEND_URL_PROD : URL publica del backend en Railway, sin slash final.
+#                        Ejemplo: https://paec-backend-production.up.railway.app
+#                        Mismo secret que usa .github/workflows/cd.yml.
 #   - CRON_SECRET   : mismo valor que la variable CRON_SECRET del backend.
 
 on:
@@ -28,24 +29,24 @@ jobs:
     steps:
       - name: Invocar POST /api/v1/cron/evaluar-alertas
         env:
-          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          BACKEND_URL_PROD: ${{ secrets.BACKEND_URL_PROD }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
 
-          if [ -z "${BACKEND_URL}" ] || [ -z "${CRON_SECRET}" ]; then
-            echo "::error::Faltan secrets BACKEND_URL o CRON_SECRET en el repositorio."
+          if [ -z "${BACKEND_URL_PROD}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Faltan secrets BACKEND_URL_PROD o CRON_SECRET en el repositorio."
             exit 1
           fi
 
-          echo "POST ${BACKEND_URL}/api/v1/cron/evaluar-alertas"
+          echo "POST ${BACKEND_URL_PROD}/api/v1/cron/evaluar-alertas"
 
           # -sS: silencioso pero muestra errores en stderr.
           # -f : sale con codigo != 0 si el servidor responde >= 400.
           # -H : header con el secret compartido.
           curl -sSf -X POST \
             -H "X-Cron-Secret: ${CRON_SECRET}" \
-            "${BACKEND_URL}/api/v1/cron/evaluar-alertas"
+            "${BACKEND_URL_PROD}/api/v1/cron/evaluar-alertas"
 
           echo
           echo "Evaluacion de alertas completada correctamente."
