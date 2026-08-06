@@ -1,19 +1,30 @@
 import { BrowserRouter, NavLink } from "react-router-dom";
 import AppRoutes from "./routes";
+import { useAuthStore } from "./store/authStore";
 
-// Enlaces principales de la nav. Se centralizan aca para poder recorrer
-// el arreglo y aplicar el mismo estilo (incluida la clase de "activo").
-const NAV_LINKS = [
-  { to: "/equipo", label: "Mi equipo" },
-  { to: "/design-sprint", label: "Design Sprint" },
-  { to: "/backlog", label: "Backlog" },
-  { to: "/kanban", label: "Kanban" },
-  { to: "/dailies", label: "Dailies" },
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/perfil", label: "Mi perfil" },
-];
+/**
+ * Enlaces principales del nav. Las 4 rutas de "equipo activo" (backlog,
+ * kanban, dailies, dashboard) usan currentTeamId del store para no seguir
+ * hardcodeando team_id=1. Se actualiza al crear equipo o al navegar a una
+ * URL con :teamId.
+ */
+function buildNavLinks(currentTeamId) {
+  const t = currentTeamId || 1;
+  return [
+    { to: "/equipo", label: "Mi equipo" },
+    { to: "/design-sprint", label: "Design Sprint" },
+    { to: `/backlog/${t}`, label: "Backlog" },
+    { to: `/kanban/${t}`, label: "Kanban" },
+    { to: `/dailies/${t}`, label: "Dailies" },
+    { to: `/dashboard/${t}`, label: "Dashboard" },
+    { to: "/perfil", label: "Mi perfil" },
+  ];
+}
 
 export default function App() {
+  const currentTeamId = useAuthStore((s) => s.currentTeamId);
+  const links = buildNavLinks(currentTeamId);
+
   return (
     <BrowserRouter>
       <div className="app-shell">
@@ -23,7 +34,7 @@ export default function App() {
               PAEC
             </NavLink>
             <div className="app-nav-links">
-              {NAV_LINKS.map((link) => (
+              {links.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}

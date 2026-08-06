@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
 import PrivacyNotice from "../components/PrivacyNotice";
+import { useAuthStore } from "../store/authStore";
 
 /*
  * Modulo de Inicio y Gestion de Equipos (issue #12).
@@ -29,6 +31,7 @@ function IntroABPScrum() {
 }
 
 export default function TeamSetup() {
+  const setCurrentTeamId = useAuthStore((s) => s.setCurrentTeamId);
   const [nombreProyecto, setNombreProyecto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [grupo, setGrupo] = useState("");
@@ -134,6 +137,10 @@ export default function TeamSetup() {
         `/api/v1/equipo/${creado.id}`
       );
       setEquipoCreado(confirmado);
+      // Marca este equipo como el activo del usuario para que el nav
+      // superior arme los enlaces (Dailies, Kanban, Dashboard) con el
+      // teamId correcto.
+      setCurrentTeamId(confirmado.id);
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (
@@ -190,6 +197,48 @@ export default function TeamSetup() {
               </li>
             ))}
           </ul>
+
+          <div
+            style={{
+              marginTop: "1.5rem",
+              paddingTop: "1rem",
+              borderTop: "1px solid rgba(148,163,184,0.2)",
+            }}
+          >
+            <p style={{ fontWeight: 600, marginBottom: "0.75rem" }}>
+              Continúa trabajando en tu equipo (ID: {equipoCreado.id})
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <Link
+                to={`/dashboard/${equipoCreado.id}`}
+                className="btn-primary"
+                style={{ textDecoration: "none", display: "inline-block" }}
+              >
+                Ir al Dashboard
+              </Link>
+              <Link
+                to={`/dailies/${equipoCreado.id}`}
+                className="btn-secondary"
+                style={{ textDecoration: "none", display: "inline-block" }}
+              >
+                Ir a Dailies
+              </Link>
+              <Link
+                to={`/kanban/${equipoCreado.id}`}
+                className="btn-secondary"
+                style={{ textDecoration: "none", display: "inline-block" }}
+              >
+                Ir al Kanban
+              </Link>
+              <Link
+                to={`/backlog/${equipoCreado.id}`}
+                className="btn-secondary"
+                style={{ textDecoration: "none", display: "inline-block" }}
+              >
+                Ir al Backlog
+              </Link>
+            </div>
+          </div>
         </section>
 
         <button

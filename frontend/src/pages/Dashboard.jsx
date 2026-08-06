@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import api from "../api/client";
 import CapacidadChart from "../components/dashboard/CapacidadChart";
 import GanttChart from "../components/dashboard/GanttChart";
+import ResumenIA from "../components/dashboard/ResumenIA";
 
 export default function Dashboard({ teamId }) {
   const [resumen, setResumen] = useState(null);
@@ -84,6 +85,8 @@ export default function Dashboard({ teamId }) {
         <h3 className="dash-card-title">Cronograma (Gantt)</h3>
         <GanttChart rows={resumen.gantt} />
       </article>
+
+      <ResumenIA teamId={teamId} />
     </div>
   );
 }
