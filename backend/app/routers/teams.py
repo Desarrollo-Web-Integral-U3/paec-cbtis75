@@ -48,6 +48,7 @@ def _serialize_team(team: Team) -> TeamOut:
         nombre_proyecto=team.nombre_proyecto,
         descripcion_proyecto=team.descripcion_proyecto,
         grupo=team.grupo,
+        horas_disponibles=team.horas_disponibles,
         members=miembros,
         design_sprint_days=team.design_sprint_days,
     )
