@@ -35,16 +35,9 @@ function sortByPriority(a, b) {
 export default function KanbanBoard({ teamId }) {
   const [tasks, setTasks] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
-  // pendingMove guarda { task, targetState } cuando se necesita evidencia
-  // antes de persistir el movimiento a "terminado".
   const [pendingMove, setPendingMove] = useState(null);
   const [error, setError] = useState("");
 
-  // Sensores del DndContext:
-  // - PointerSensor con activationConstraint de 5px evita disparar drag
-  //   por click accidental sobre los botones fallback.
-  // - KeyboardSensor da soporte para navegacion con teclado (Enter para
-  //   levantar, flechas para mover, Espacio para soltar).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
@@ -60,9 +53,6 @@ export default function KanbanBoard({ teamId }) {
     loadTasks();
   }, [teamId]);
 
-  // Entrada unica para mover una tarea. Si el destino es "terminado" y
-  // la tarea no tiene evidencia previa, abre el modal en vez de disparar
-  // el request. La regla tambien esta validada en el backend, aqui es UX.
   const requestMove = (task, targetState) => {
     setError("");
     if (task.estado_kanban === targetState) return;
@@ -114,18 +104,17 @@ export default function KanbanBoard({ teamId }) {
   };
 
   return (
-    <>
+    <div className="kb-page">
+      <header className="kb-header">
+        <h1 className="kb-title">Tablero Kanban</h1>
+        <p className="kb-subtitle">
+          Arrastra las tarjetas entre columnas o usa los botones de accion.
+          Para marcar como Terminado se requiere evidencia.
+        </p>
+      </header>
+
       {error && (
-        <div
-          role="alert"
-          style={{
-            background: "#fdecea",
-            color: "#611a15",
-            padding: "0.5rem",
-            marginBottom: "0.5rem",
-            borderRadius: "4px",
-          }}
-        >
+        <div className="kb-error" role="alert">
           {error}
         </div>
       )}
@@ -137,7 +126,7 @@ export default function KanbanBoard({ teamId }) {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveTask(null)}
       >
-        <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+        <div className="kb-board">
           {COLUMNS.map((col) => (
             <ColumnaKanban
               key={col.key}
@@ -151,8 +140,6 @@ export default function KanbanBoard({ teamId }) {
           ))}
         </div>
 
-        {/* DragOverlay muestra un preview flotante de la tarjeta durante
-            el drag, independiente del layout de la columna origen. */}
         <DragOverlay>
           {activeTask ? <TarjetaHistoria task={activeTask} isOverlay /> : null}
         </DragOverlay>
@@ -165,6 +152,6 @@ export default function KanbanBoard({ teamId }) {
           onCancel={() => setPendingMove(null)}
         />
       )}
-    </>
+    </div>
   );
 }

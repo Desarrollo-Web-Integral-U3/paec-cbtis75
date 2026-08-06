@@ -7,25 +7,16 @@ import TarjetaHistoria from "./TarjetaHistoria";
 export default function ColumnaKanban({ columnKey, label, tasks, onMove }) {
   const { setNodeRef, isOver } = useDroppable({ id: columnKey });
 
+  const classNames = ["kb-column", isOver ? "kb-column--over" : ""]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        flex: 1,
-        border: "1px solid #ddd",
-        padding: "0.5rem",
-        borderRadius: "4px",
-        background: isOver ? "#eef6ff" : "transparent",
-        transition: "background 120ms ease",
-        minHeight: "300px",
-      }}
-    >
-      <h3 style={{ marginTop: 0 }}>
-        {label}{" "}
-        <span style={{ color: "#888", fontWeight: "normal" }}>
-          ({tasks.length})
-        </span>
-      </h3>
+    <div ref={setNodeRef} className={classNames}>
+      <div className="kb-column-header">
+        <span className="kb-column-title">{label}</span>
+        <span className="kb-column-count">{tasks.length}</span>
+      </div>
       {tasks.map((t) => (
         <TarjetaHistoria
           key={t.id}
