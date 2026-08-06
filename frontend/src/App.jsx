@@ -1,6 +1,7 @@
 import { BrowserRouter, NavLink } from "react-router-dom";
 import AppRoutes from "./routes";
 import { useAuthStore } from "./store/authStore";
+import LogoutButton from "./components/LogoutButton";
 
 /**
  * Enlaces principales del nav. Las 4 rutas de "equipo activo" (backlog,
@@ -47,6 +48,7 @@ export default function App() {
                   {link.label}
                 </NavLink>
               ))}
+              <LogoutButton />
             </div>
           </div>
         </nav>

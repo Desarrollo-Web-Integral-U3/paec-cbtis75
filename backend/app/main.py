@@ -39,10 +39,14 @@ app.add_middleware(
 # GARANTIA: nunca lee el body ni registra contraseñas u otros datos sensibles.
 app.add_middleware(AuditLogMiddleware)
 
-# En desarrollo: crea las tablas automáticamente.
-# En producción: usar Alembic (alembic upgrade head) y NO Base.metadata.create_all.
-if settings.environment == "development":
-    Base.metadata.create_all(bind=engine)
+# Creación automática de tablas al arrancar.
+# `create_all` es idempotente: si las tablas ya existen no las toca ni las duplica.
+# Corre en TODOS los ambientes (dev + prod) para que el primer arranque contra
+# una BD vacía (Railway PostgreSQL recién provisionado) genere el schema
+# sin intervención manual. Deuda técnica documentada: en un entorno serio
+# de producción se usaría Alembic (`alembic upgrade head`) para tener control
+# fino de las migraciones. Ver docs/DEPLOYMENT.md.
+Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
 app.include_router(teams.router)
