@@ -25,10 +25,16 @@ class RolScrum(str, Enum):
     NO confundir con el rol de usuario a nivel de aplicacion (estudiante,
     scrum_master, docente), que vive en app/models/user.py::RolUsuario.
     Este enum aplica solo a la posicion dentro de un equipo especifico.
+
+    Se aceptan variantes de Developer con especialidad (Dev FrontEnd,
+    Dev BackEnd) porque el frontend permite capturarlas al crear el equipo
+    y el modelo Team las guarda tal cual en la columna `rol_scrum`.
     """
     SCRUM_MASTER = "Scrum Master"
     PRODUCT_OWNER = "Product Owner"
     DEVELOPER = "Developer"
+    DEV_FRONTEND = "Dev FrontEnd"
+    DEV_BACKEND = "Dev BackEnd"
 
 
 class TeamMemberInput(BaseModel):

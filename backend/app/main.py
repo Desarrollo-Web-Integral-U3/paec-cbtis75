@@ -17,6 +17,7 @@ from app.routers import (
     dashboard,
     uploads,
     cron,
+    ai,
 )
 
 settings = get_settings()
@@ -56,6 +57,7 @@ app.include_router(dailies.router)
 app.include_router(dashboard.router)
 app.include_router(uploads.router)
 app.include_router(cron.router)
+app.include_router(ai.router)
 
 
 @app.get("/api/v1/health")
