@@ -1,0 +1,30 @@
+/**
+ * Configuración de Cloudflare Workers Builds para el frontend de PAEC.
+ *
+ * Este proyecto es una SPA construida con Vite (React + React Router).
+ * Cloudflare está migrando todo su flujo unificado bajo "Workers", así
+ * que aunque el resultado sea un sitio estático, se declara como Worker
+ * con Static Assets.
+ *
+ * Puntos clave:
+ *   - `assets.directory` apunta al output de `npm run build` (Vite → dist).
+ *   - `assets.not_found_handling: "single-page-application"` es CRÍTICO:
+ *     hace que cualquier request a una ruta que no exista como archivo
+ *     (ej. /login, /perfil, /kanban) sirva `index.html` para que React
+ *     Router maneje la ruta client-side. Sin esto, un deep-link daría 404.
+ *
+ * Deploy: se ejecuta desde el dashboard de Cloudflare con:
+ *   npm install && npm run build   (Build command)
+ *   npx wrangler deploy            (Deploy command)
+ *
+ * Ver docs/DEPLOYMENT.md para el paso a paso completo.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "paec-cbtis75",
+  "compatibility_date": "2024-09-23",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

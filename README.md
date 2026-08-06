@@ -25,6 +25,34 @@ BackEnd   → Uvicorn + FastAPI, arquitectura en capas:
             + factories (notificaciones) + strategies (alertas)
 ```
 
+## En producción
+
+| Servicio | URL pública |
+|---|---|
+| FrontEnd (Cloudflare) | https://paec-cbtis75.f51783154.workers.dev |
+| BackEnd  (Railway)    | https://paec-cbtis75-production.up.railway.app |
+| BackEnd Swagger UI    | https://paec-cbtis75-production.up.railway.app/docs |
+
+Arquitectura de despliegue:
+
+```
+GitHub main branch
+│
+├── Railway  (auto-deploy nativo desde GitHub)
+│     ├── PostgreSQL 16 (plugin managed, cifrado at-rest)
+│     └── Backend FastAPI (Dockerfile de /backend)
+│
+├── Cloudflare Pages  (auto-deploy nativo desde GitHub)
+│     └── Frontend Vite  (build estático, HTTPS + CDN)
+│
+└── GitHub Actions
+      ├── ci.yml           : lint + pytest + build en cada PR
+      ├── cd.yml           : smoke test post-deploy (health check)
+      └── alerts-daily.yml : cron diario 08:00 CDMX (POST /cron/evaluar-alertas)
+```
+
+**Guía completa de despliegue** paso a paso (crear proyectos en Railway y Cloudflare, configurar variables, sembrar la BD, rotar secretos): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Ejecutar el proyecto localmente (con Docker)
 
 1. Clonar el repositorio y entrar a la carpeta:

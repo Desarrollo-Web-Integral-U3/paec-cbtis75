@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     # cambiando este valor en el .env del backend y en el secret del repo.
     cron_secret: str = ""
 
+    # --- Servicio de terceros: Inteligencia Artificial (Groq) ---
+    # API compatible con OpenAI para inferencia LLM sobre modelos abiertos
+    # (Llama 3.3, Mixtral, etc). Se usa para generar resúmenes semanales
+    # de dailies vía POST /api/v1/ai/resumen-semanal/{team_id}.
+    # Obtén tu key gratis en https://console.groq.com/keys
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

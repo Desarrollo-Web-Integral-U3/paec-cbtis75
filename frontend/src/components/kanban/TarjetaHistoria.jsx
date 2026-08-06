@@ -12,47 +12,62 @@ export default function TarjetaHistoria({
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: task.id, disabled: isOverlay });
 
-  const style = {
-    border: "1px solid #eee",
-    padding: "0.5rem",
-    margin: "0.5rem 0",
-    background: "#fff",
-    borderRadius: "4px",
-    boxShadow: isOverlay ? "0 4px 12px rgba(0,0,0,0.15)" : "none",
-    opacity: isDragging && !isOverlay ? 0.4 : 1,
-    cursor: isOverlay ? "grabbing" : "grab",
-    transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-      : undefined,
-  };
+  const classNames = [
+    "kb-card",
+    isDragging && !isOverlay ? "kb-card--dragging" : "",
+    isOverlay ? "kb-card--overlay" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const dragStyle = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <strong>{task.nombre_actividad}</strong>
-      <p style={{ margin: "0.25rem 0", fontSize: "0.85rem", color: "#555" }}>
+    <div
+      ref={setNodeRef}
+      className={classNames}
+      style={dragStyle}
+      {...attributes}
+      {...listeners}
+    >
+      <div className="kb-card-title">{task.nombre_actividad}</div>
+      <div className="kb-card-meta">
         Prioridad: {task.prioridad} &middot; {task.story_points} pts
-      </p>
+      </div>
 
-      {/* Botones fallback: mismo comportamiento que el drag pero accesibles
-          via teclado/tap. onPointerDown detiene la propagacion para que
-          hacer click en el boton no dispare el sensor de drag del padre. */}
+      {/* Botones fallback (accesibilidad + mobile). stopPropagation en
+          onPointerDown para que el click no dispare el sensor de drag. */}
       {!isOverlay && onMove && (
         <div
-          style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}
+          className="kb-card-actions"
           onPointerDown={(e) => e.stopPropagation()}
         >
           {currentColumn !== "por_hacer" && (
-            <button type="button" onClick={() => onMove(task, "por_hacer")}>
+            <button
+              type="button"
+              className="kb-btn"
+              onClick={() => onMove(task, "por_hacer")}
+            >
               &larr; Por hacer
             </button>
           )}
           {currentColumn !== "haciendo" && (
-            <button type="button" onClick={() => onMove(task, "haciendo")}>
+            <button
+              type="button"
+              className="kb-btn"
+              onClick={() => onMove(task, "haciendo")}
+            >
               Haciendo
             </button>
           )}
           {currentColumn !== "terminado" && (
-            <button type="button" onClick={() => onMove(task, "terminado")}>
+            <button
+              type="button"
+              className="kb-btn"
+              onClick={() => onMove(task, "terminado")}
+            >
               Terminado &rarr;
             </button>
           )}

@@ -4,17 +4,11 @@ import api from "../api/client";
 import { useAuthStore } from "../store/authStore";
 
 /**
- * Página de perfil del usuario autenticado.
+ * Pagina de perfil del usuario autenticado.
  *
- * Cumple el ejercicio del derecho ARCO de Cancelación (LFPDPPP):
- * permite al titular solicitar la anonimización de sus datos personales
+ * Cumple el ejercicio del derecho ARCO de Cancelacion (LFPDPPP):
+ * permite al titular solicitar la anonimizacion de sus datos personales
  * llamando a DELETE /api/v1/auth/me.
- *
- * Flujo:
- *  1. GET /me al montar la página para mostrar a quién se va a eliminar.
- *  2. Al pulsar "Eliminar mi cuenta" se pide confirmación explícita
- *     (destructivo, irreversible).
- *  3. DELETE /me → 204 → logout local + redirect a /login.
  */
 export default function Perfil() {
   const navigate = useNavigate();
@@ -44,13 +38,11 @@ export default function Perfil() {
   }, []);
 
   const handleEliminar = async () => {
-    // Confirmación destructiva. window.confirm es KISS y suficiente para R1;
-    // se puede reemplazar más adelante por un modal más pulido.
     const confirmado = window.confirm(
       "¿Seguro que deseas eliminar tu cuenta?\n\n" +
-        "Se anonimizarán tus datos personales (nombre, correo, número de control).\n" +
-        "Tus aportaciones históricas (tareas, dailies) se conservarán sin tu nombre.\n\n" +
-        "Esta acción NO se puede deshacer.",
+        "Se anonimizaran tus datos personales (nombre, correo, numero de control).\n" +
+        "Tus aportaciones historicas (tareas, dailies) se conservaran sin tu nombre.\n\n" +
+        "Esta accion NO se puede deshacer.",
     );
     if (!confirmado) return;
 
@@ -58,7 +50,6 @@ export default function Perfil() {
     setError("");
     try {
       await api.delete("/api/v1/auth/me");
-      // Éxito (204): limpiamos la sesión local y regresamos al login.
       logout();
       navigate("/login", {
         replace: true,
@@ -69,69 +60,74 @@ export default function Perfil() {
       setError(
         typeof detalle === "string"
           ? detalle
-          : "No se pudo eliminar la cuenta. Intenta de nuevo más tarde.",
+          : "No se pudo eliminar la cuenta. Intenta de nuevo mas tarde.",
       );
       setEnviando(false);
     }
   };
 
-  if (cargando) return <p>Cargando perfil…</p>;
+  if (cargando) {
+    return (
+      <div className="pf-page">
+        <p className="loading-state">Cargando perfil...</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 600 }}>
-      <h1>Mi perfil</h1>
+    <div className="pf-page">
+      <header className="pf-header">
+        <h1 className="pf-title">Mi perfil</h1>
+      </header>
 
-      {perfil ? (
-        <dl>
-          <dt>Nombre</dt>
-          <dd>{perfil.nombre_completo}</dd>
-          <dt>Correo</dt>
-          <dd>{perfil.email}</dd>
-          <dt>Número de control</dt>
-          <dd>{perfil.numero_control}</dd>
-          <dt>Rol</dt>
-          <dd>{perfil.rol}</dd>
-        </dl>
-      ) : (
-        <p style={{ color: "var(--error-color)" }}>{error}</p>
-      )}
+      <section className="pf-card">
+        <h2>Datos personales</h2>
+        {perfil ? (
+          <dl className="pf-dl">
+            <dt>Nombre</dt>
+            <dd>{perfil.nombre_completo}</dd>
+            <dt>Correo</dt>
+            <dd>{perfil.email}</dd>
+            <dt>Numero de control</dt>
+            <dd>{perfil.numero_control}</dd>
+            <dt>Rol</dt>
+            <dd>{perfil.rol}</dd>
+          </dl>
+        ) : (
+          <p role="alert" className="cap-alert">
+            {error}
+          </p>
+        )}
+      </section>
 
-      <hr style={{ margin: "2rem 0" }} />
-
-      <section>
+      <section className="pf-card pf-card--danger">
         <h2>Eliminar mi cuenta (derecho ARCO)</h2>
-        <p>
+        <p className="pf-arco-text">
           En cumplimiento de la <strong>LFPDPPP</strong>, puedes solicitar
-          en cualquier momento la cancelación de tus datos personales. Se
-          anonimizarán tu nombre, correo y número de control. Las tareas y
-          dailies que hayas capturado <em>se conservarán</em> (para no
-          romper el historial del equipo) pero ya no podrán vincularse a ti.
+          en cualquier momento la cancelacion de tus datos personales. Se
+          anonimizaran tu nombre, correo y numero de control. Las tareas y
+          dailies que hayas capturado <em>se conservaran</em> (para no
+          romper el historial del equipo) pero ya no podran vincularse a ti.
         </p>
-        <p>
-          Esta acción es <strong>irreversible</strong>: después no podrás
-          iniciar sesión con esta cuenta.
+        <p className="pf-arco-text">
+          Esta accion es <strong>irreversible</strong>: despues no podras
+          iniciar sesion con esta cuenta.
         </p>
 
         {error && (
-          <p role="alert" style={{ color: "var(--error-color)" }}>
+          <p role="alert" className="cap-alert">
             {error}
           </p>
         )}
 
         <button
           type="button"
+          className="btn-danger"
           onClick={handleEliminar}
           disabled={enviando}
-          style={{
-            background: "var(--error-color, #b91c1c)",
-            color: "white",
-            padding: "0.6rem 1rem",
-            border: "none",
-            borderRadius: 4,
-            cursor: enviando ? "not-allowed" : "pointer",
-          }}
+          style={{ marginTop: "0.75rem" }}
         >
-          {enviando ? "Eliminando…" : "Eliminar mi cuenta"}
+          {enviando ? "Eliminando..." : "Eliminar mi cuenta"}
         </button>
       </section>
     </div>
