@@ -2,11 +2,8 @@ import { useMemo, useState } from "react";
 import { Gantt, ViewMode } from "gantt-task-react";
 import "gantt-task-react/dist/index.css";
 
-// Mapeo entre el estado del Kanban del backend y el porcentaje visual
-// que dibuja gantt-task-react dentro de cada barra. No tenemos un campo
-// de avance real (0-100), asi que aproximamos: por_hacer=0, haciendo=50,
-// terminado=100. Si en el futuro se agrega un campo porcentaje_avance al
-// modelo Task, solo hay que cambiar esta funcion.
+// Mapeo estado Kanban -> porcentaje visual dentro de la barra del Gantt.
+// El modelo Task no tiene un campo de avance real (0-100), aproximamos.
 const PROGRESS_BY_STATUS = {
   por_hacer: 0,
   haciendo: 50,
@@ -14,8 +11,7 @@ const PROGRESS_BY_STATUS = {
 };
 
 // Paleta por estado. backgroundColor pinta el "hueco" de la barra;
-// progressColor pinta el fill de avance. Los "selected" son la version
-// mas saturada que se usa al hacer hover/click en la libreria.
+// progressColor pinta el fill de avance.
 const STYLES_BY_STATUS = {
   por_hacer: {
     backgroundColor: "#e5e7eb",
@@ -37,17 +33,12 @@ const STYLES_BY_STATUS = {
   },
 };
 
-// Opciones del selector de vista. La libreria acepta Day, Week, Month
-// (entre otros); dejamos las 3 mas usadas en gestion de sprints.
 const VIEW_MODES = [
   { key: ViewMode.Day, label: "Dia" },
   { key: ViewMode.Week, label: "Semana" },
   { key: ViewMode.Month, label: "Mes" },
 ];
 
-// Transforma una fila del backend { id, nombre, inicio, fin, estado } al
-// shape que espera gantt-task-react: id string, start/end como Date,
-// progress numerico y styles por estado.
 function toGanttTask(row) {
   const status = row.estado || "por_hacer";
   return {
@@ -57,7 +48,7 @@ function toGanttTask(row) {
     end: new Date(row.fin),
     type: "task",
     progress: PROGRESS_BY_STATUS[status] ?? 0,
-    isDisabled: true, // solo lectura; drag para editar fechas queda fuera de scope
+    isDisabled: true,
     styles: STYLES_BY_STATUS[status] ?? STYLES_BY_STATUS.por_hacer,
   };
 }
@@ -65,13 +56,11 @@ function toGanttTask(row) {
 export default function GanttChart({ rows }) {
   const [viewMode, setViewMode] = useState(ViewMode.Week);
 
-  // useMemo evita reconvertir el array en cada render; solo se recalcula
-  // cuando cambia la data de entrada.
   const tasks = useMemo(() => (rows || []).map(toGanttTask), [rows]);
 
   if (tasks.length === 0) {
     return (
-      <p style={{ color: "#666", fontStyle: "italic" }}>
+      <p className="gantt-empty">
         No hay tareas registradas todavia para este equipo.
       </p>
     );
@@ -79,17 +68,8 @@ export default function GanttChart({ rows }) {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginBottom: "0.5rem",
-          alignItems: "center",
-        }}
-      >
-        <label htmlFor="gantt-view-mode" style={{ fontSize: "0.9rem" }}>
-          Vista:
-        </label>
+      <div className="gantt-toolbar">
+        <label htmlFor="gantt-view-mode">Vista:</label>
         <select
           id="gantt-view-mode"
           value={viewMode}
@@ -101,18 +81,20 @@ export default function GanttChart({ rows }) {
             </option>
           ))}
         </select>
-        <span style={{ marginLeft: "auto", fontSize: "0.85rem", color: "#666" }}>
+        <span className="gantt-count">
           {tasks.length} tarea{tasks.length === 1 ? "" : "s"}
         </span>
       </div>
 
-      <Gantt
-        tasks={tasks}
-        viewMode={viewMode}
-        locale="es"
-        listCellWidth="200px"
-        columnWidth={viewMode === ViewMode.Month ? 300 : 65}
-      />
+      <div className="gantt-frame">
+        <Gantt
+          tasks={tasks}
+          viewMode={viewMode}
+          locale="es"
+          listCellWidth="200px"
+          columnWidth={viewMode === ViewMode.Month ? 300 : 65}
+        />
+      </div>
     </div>
   );
 }
