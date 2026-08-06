@@ -29,9 +29,9 @@ BackEnd   → Uvicorn + FastAPI, arquitectura en capas:
 
 | Servicio | URL pública |
 |---|---|
-| FrontEnd (Cloudflare Pages) | https://paec-cbtis75.pages.dev _(placeholder — actualizar tras primer deploy)_ |
-| BackEnd  (Railway)          | https://paec-backend-production.up.railway.app _(placeholder)_ |
-| BackEnd Swagger UI          | `<backend>/docs` |
+| FrontEnd (Cloudflare) | https://paec-cbtis75.f51783154.workers.dev |
+| BackEnd  (Railway)    | https://paec-cbtis75-production.up.railway.app |
+| BackEnd Swagger UI    | https://paec-cbtis75-production.up.railway.app/docs |
 
 Arquitectura de despliegue:
 

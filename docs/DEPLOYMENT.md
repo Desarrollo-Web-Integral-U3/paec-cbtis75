@@ -1,11 +1,21 @@
 # Despliegue a producción — PAEC
 
 Guía paso a paso para desplegar el sistema PAEC en la nube. Usa
-**Railway** para el backend + PostgreSQL y **Cloudflare Pages** para el
-frontend. Ambos servicios se auto-actualizan al hacer merge a `main`
-mediante la integración nativa con GitHub (webhook implícito). Sobre eso,
-GitHub Actions ejecuta un **smoke test** post-deploy (`cd.yml`) que deja
-evidencia visible del despliegue exitoso.
+**Railway** para el backend + PostgreSQL y **Cloudflare Workers Builds**
+(sucesor de Cloudflare Pages) para el frontend. Ambos servicios se
+auto-actualizan al hacer merge a `main` mediante la integración nativa
+con GitHub (webhook implícito). Sobre eso, GitHub Actions ejecuta un
+**smoke test** post-deploy (`cd.yml`) que deja evidencia visible del
+despliegue exitoso.
+
+## URLs en producción
+
+| Servicio | URL |
+|---|---|
+| Frontend (Cloudflare) | https://paec-cbtis75.f51783154.workers.dev |
+| Backend (Railway) | https://paec-cbtis75-production.up.railway.app |
+| Swagger / OpenAPI | https://paec-cbtis75-production.up.railway.app/docs |
+| Health check | https://paec-cbtis75-production.up.railway.app/api/v1/health |
 
 ## Arquitectura de producción
 
