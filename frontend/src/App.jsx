@@ -1,5 +1,6 @@
 import { BrowserRouter, NavLink } from "react-router-dom";
 import AppRoutes from "./routes";
+import LogoutButton from "./components/LogoutButton";
 
 // Enlaces principales de la nav. Se centralizan aca para poder recorrer
 // el arreglo y aplicar el mismo estilo (incluida la clase de "activo").
@@ -36,6 +37,7 @@ export default function App() {
                   {link.label}
                 </NavLink>
               ))}
+              <LogoutButton />
             </div>
           </div>
         </nav>
