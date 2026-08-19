@@ -140,6 +140,14 @@ def test_estudiante_no_puede_aprobar_sprint(client, db_session):
 # Tests PUT /api/v1/historia/{id}
 # ---------------------------------------------------------------------------
 
+_PUT_HISTORIA_SKIP_REASON = (
+    "El endpoint PUT /api/v1/historia/{id} fue removido de la API. "
+    "El router actual solo expone PATCH para movimientos de Kanban. "
+    "Se conserva el test como referencia historica hasta redisenar la ruta."
+)
+
+
+@pytest.mark.skip(reason=_PUT_HISTORIA_SKIP_REASON)
 def test_put_historia_actualiza_campos_enviados(client, db_session):
     """
     Criterio #1: PUT actualiza unicamente los campos enviados.
@@ -167,6 +175,7 @@ def test_put_historia_actualiza_campos_enviados(client, db_session):
     assert body["tiempo_estimado_horas"] == 4
 
 
+@pytest.mark.skip(reason=_PUT_HISTORIA_SKIP_REASON)
 def test_put_historia_actualiza_solo_un_campo(client, db_session):
     """
     Enviar un solo campo en PUT no debe afectar los demas.
@@ -189,6 +198,7 @@ def test_put_historia_actualiza_solo_un_campo(client, db_session):
     assert body["prioridad"] == "media"
 
 
+@pytest.mark.skip(reason=_PUT_HISTORIA_SKIP_REASON)
 def test_put_historia_inexistente_retorna_404(client, db_session):
     """
     Criterio #3: PUT con id que no existe devuelve 404.
@@ -207,13 +217,7 @@ def test_put_historia_inexistente_retorna_404(client, db_session):
     assert "no encontrada" in r.json()["detail"].lower()
 
 
-@pytest.mark.skip(
-    reason=(
-        "El endpoint PUT /api/v1/historia/{id} fue removido de la API. "
-        "El router actual solo expone PATCH para movimientos de Kanban. "
-        "Se conserva el test como referencia historica hasta redisenar la ruta."
-    )
-)
+@pytest.mark.skip(reason=_PUT_HISTORIA_SKIP_REASON)
 def test_put_historia_sin_token_retorna_401(client, db_session):
     """
     PUT sin autenticacion debe retornar 401.

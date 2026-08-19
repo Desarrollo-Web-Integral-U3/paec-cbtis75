@@ -28,13 +28,21 @@ PAYLOAD_INVALIDO = {"email": "noexiste@test.com", "password": "mal"}
 @pytest.fixture(autouse=True)
 def reset_limiter():
     """
-    Limpia todos los contadores del rate limiter antes de cada test.
-    Sin esto, los intentos de un test se acumulan en el siguiente,
-    causando falsos 429.
+    Prepara el limiter para probar su comportamiento real:
+
+    1. Habilita temporalmente el limiter (el resto de la suite corre con
+       DISABLE_RATE_LIMIT=1 para evitar 429 falsos desde el TestClient;
+       estos tests son la excepcion porque justamente verifican el limiter).
+    2. Limpia todos los contadores antes y despues del test para que los
+       intentos de un test no se acumulen en el siguiente.
+    3. Restaura el estado original del atributo `enabled` al salir.
     """
+    estado_previo = limiter.enabled
+    limiter.enabled = True
     limiter._storage.reset()
     yield
-    limiter._storage.reset()  # limpieza tambien al salir
+    limiter._storage.reset()
+    limiter.enabled = estado_previo
 
 
 # ---------------------------------------------------------------------------
