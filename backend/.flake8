@@ -1,0 +1,12 @@
+# Config de flake8 para el backend.
+#
+# En codigo de produccion aplicamos las reglas estrictas (max-line-length=100).
+# En tests relajamos algunas reglas frecuentes que aparecen por patrones tipicos
+# de pytest y no aportan valor real: variables asignadas para instanciar sin
+# usarse despues, imports usados solo como fixtures, y lineas ocasionalmente
+# largas por payloads JSON en cases de prueba.
+[flake8]
+max-line-length = 100
+extend-ignore = E203
+per-file-ignores =
+    app/tests/*:E501,F401,F841,E302,E303,E711
