@@ -121,7 +121,7 @@ class CapacidadOut(BaseModel):
     team_id: int
     horas_disponibles: int
     horas_asignadas: int   # suma de tiempo_estimado_horas de todas las tareas
-    horas_restantes: int   # horas_disponibles - horas_asignadas (puede ser negativo si hay sobrecarga)
+    horas_restantes: int   # horas_disponibles - horas_asignadas (negativo = sobrecarga)
 
     model_config = ConfigDict(from_attributes=True)
 

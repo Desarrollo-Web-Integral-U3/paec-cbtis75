@@ -7,7 +7,13 @@ from app.models.sprint import Sprint
 from app.models.task import Task
 from app.repositories.base_repository import BaseRepository
 from app.repositories.task_repository import TaskRepository
-from app.schemas.task import SprintApprovalUpdate, SprintCreate, SprintOut, TaskCreate, TaskOut, TaskUpdate
+from app.schemas.task import (
+    SprintApprovalUpdate,
+    SprintCreate,
+    SprintOut,
+    TaskCreate,
+    TaskOut,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["backlog"])
 
